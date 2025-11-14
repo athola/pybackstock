@@ -1,0 +1,17 @@
+[project]
+name = "inventory-app"
+version = "2.0.0"
+description = "Flask Inventory Management Application"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-sqlalchemy>=3.1.0",
+    "flask-migrate>=4.0.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "psycopg2-binary>=2.9.9",
+    "gunicorn>=22.0.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.32.0",
+    "werkzeug>=3.0.0",
+]

@@ -1,22 +1,43 @@
 # InventoryApp
 Python application which searches for and updates inventory items in a database
 
-Use:
+## Technology Stack
+- **Python**: 3.11+ (minimum 3.9)
+- **Framework**: Flask 3.x
+- **Database**: PostgreSQL with SQLAlchemy 2.0
+- **Package Manager**: UV (modern, fast Python package manager)
 
-Running pipenv:
+## Setup
 
-If checking out the repository, this application uses pipenv to run a virtual environment on Windows.
+### Using UV (Recommended)
 
-To use pipenv, type the following in cmd while in the root directory:
-<b>python -m pipenv shell</b>
+This application uses [uv](https://github.com/astral-sh/uv) for fast, reliable dependency management.
 
-To update pipenv if installing new pip package while in pipenv shell, type:
-<b>pipenv update</b>
+1. Install uv (if not already installed):
+```bash
+pip install uv
+```
 
-To run python scripts in pipenv, type:
-<b>pipenv run filename.py</b>
+2. Create virtual environment and install dependencies:
+```bash
+uv venv
+uv pip install -r requirements.txt
+```
 
-Running app:
+3. Activate virtual environment:
+```bash
+source .venv/bin/activate  # On Linux/Mac
+# or
+.venv\Scripts\activate  # On Windows
+```
+
+4. Set up environment variables (copy .env.example to .env and configure):
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+### Running app:
 
 This app can be viewed via webserver hosted on heroku at the following addresses:
 Staging:
@@ -25,53 +46,95 @@ https://inventory-app-stage.herokuapp.com/
 Production:
 https://inventory-app-pro.herokuapp.com/
 
-To run locally, enter the pipenv shell environment and type:
-<b>pipenv run manage.py runserver</b>
+To run locally (with virtual environment activated):
+```bash
+python manage.py runserver
+```
 
-If running outside of virtual environment, you need to be sure that your environment variables are set correctly.
-These are set in the .env file, and this application also makes use of a Procfile.
+Or using gunicorn (production-like):
+```bash
+gunicorn inventoryApp:inventoryApp
+```
 
 The app will run on http://127.0.0.1:5000/
 
-Database:
-This database was created using Postgres and the Flask interface for passing SQL statements is SQLAlchemy
+## Database Management
 
-The database's __init__ located in models.py can be updated by the following command:
-<b>pipenv run manage.py db init</b>
+This database uses PostgreSQL with SQLAlchemy 2.0 ORM.
 
-The database's migrate used by Flask-Migrate uses the following command:
-<b>pipenv run manage.py db migrate</b>
+Initialize the database:
+```bash
+python manage.py db init
+```
 
-The database can be upgraded by the following command:
-<b>pipenv run manage.py db upgrade</b>
+Create a migration:
+```bash
+python manage.py db migrate
+```
 
-To connect to the database use psql and type:
-<b>\c inventory_dev</b>
+Apply migrations:
+```bash
+python manage.py db upgrade
+```
 
-To list relations type:
-<b>\dt</b>
+## PostgreSQL Database Commands
 
-To list columns, types, and modifiers type:
-<b>\d grocery_items</b>
+Connect to the database:
+```bash
+psql -d inventory_dev
+```
 
-Remote migration:
-To stage heroku app and check if database is running type:
-<b>heroku config --app inventory-app-stage</b>
+Or within psql:
+```sql
+\c inventory_dev
+```
 
-If database environment variable isn't set up, type:
-<b>heroku addons:create heroku-postgresql:hobby-dev --app inventory-app-stage</b>
+List tables:
+```sql
+\dt
+```
 
-Then do a push to the stage environment:
-<b>git push stage master</b>
+Describe table structure:
+```sql
+\d grocery_items
+```
 
-Run migrations created to migrate staging database using:
-<b>pipenv run heroku run python manage.py db upgrade --app inventory-app-stage</b>
+## Deployment (Heroku)
 
-Do same for production server:
-<b>heroku config --app inventory-app-pro</b>
+Check staging configuration:
+```bash
+heroku config --app inventory-app-stage
+```
 
-<b>heroku addons:create heroku-postgresql:hobby-dev --app inventory-app-pro</b>
+Add PostgreSQL database:
+```bash
+heroku addons:create heroku-postgresql:hobby-dev --app inventory-app-stage
+```
 
-<b>git push pro master</b>
+Deploy to staging:
+```bash
+git push stage main
+```
 
-<b>pipenv run heroku run python manage.py db upgrade --app inventory-app-pro</b>
+Run migrations on staging:
+```bash
+heroku run python manage.py db upgrade --app inventory-app-stage
+```
+
+For production (same commands with production app name):
+```bash
+heroku config --app inventory-app-pro
+heroku addons:create heroku-postgresql:hobby-dev --app inventory-app-pro
+git push pro main
+heroku run python manage.py db upgrade --app inventory-app-pro
+```
+
+## Security Updates
+
+This codebase has been modernized with:
+- Updated to Python 3.11+ (from 3.7)
+- All dependencies updated to latest secure versions
+- Fixed hardcoded SECRET_KEY vulnerability
+- Updated to SQLAlchemy 2.0 (from 1.3)
+- Updated to Flask 3.x (from 1.1)
+- Improved error handling and session management

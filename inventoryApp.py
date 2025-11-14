@@ -1,12 +1,14 @@
-import os, sys, io, csv
-import requests
+import os
+import sys
+import io
+import csv
 import json
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import exists, func
+from sqlalchemy import select, func
 
 inventoryApp = Flask(__name__)
-inventoryApp.config.from_object(os.environ['APP_SETTINGS'])
+inventoryApp.config.from_object(os.environ.get('APP_SETTINGS', 'config.DevelopmentConfig'))
 inventoryApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(inventoryApp)
 
@@ -147,16 +149,18 @@ def set_item():
 
 def add_item(item, errors, items):
 	try:
-		item_exists = db.session.query(exists().where(Grocery.id==item.id)).scalar()
-		if not (item_exists):
+		# SQLAlchemy 2.0 compatible exists check
+		item_exists = db.session.query(Grocery).filter(Grocery.id == item.id).first() is not None
+		if not item_exists:
 			db.session.add(item)
 			db.session.commit()
-			json_obj = json.dumps([dict(i) for i in item])
+			json_obj = json.dumps(dict(item))
 			items.append(json_obj)
 		else:
 			errors.append('Unable to add item to database. This item has already been added with ID: ' + str(item.id))
 	except Exception as ex:
-		errors.append('Unable to add item to database.' + str(ex))
+		db.session.rollback()
+		errors.append('Unable to add item to database. ' + str(ex))
 	return errors, items
 	
 def iterate_through_csv(input, errors, items):

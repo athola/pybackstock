@@ -1,12 +1,19 @@
 import os
+import secrets
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config(object):
 	DEBUG = False
 	TESTING = False
 	CSRF_ENABLED = True
-	SECRET_KEY = "f95b0391fc26cddb3b563fab72fa7a4f3fa5f29d29e18a4b4fbd98125d8b39f8"
-	SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+	# Use environment variable for SECRET_KEY, fall back to generated secret for development
+	SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+	# Handle both old and new PostgreSQL URI formats
+	database_url = os.environ.get('DATABASE_URL', '')
+	if database_url.startswith('postgres://'):
+		database_url = database_url.replace('postgres://', 'postgresql://', 1)
+	SQLALCHEMY_DATABASE_URI = database_url
 	
 class ProductionConfig(Config):
 	DEBUG = False
