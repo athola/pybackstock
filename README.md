@@ -58,6 +58,70 @@ gunicorn inventoryApp:inventoryApp
 
 The app will run on http://127.0.0.1:5000/
 
+## Interactive Demo
+
+Experience the Inventory App's functionality with the built-in interactive demo powered by Playwright:
+
+```bash
+make demo
+```
+
+The demo showcases core features including:
+- **Search Functionality** - Search inventory items by various criteria (ID, description, department, price, etc.)
+- **Add Items** - Add individual items with comprehensive details (ID, description, price, cost, shelf life, etc.)
+- **CSV Upload** - Bulk import inventory data from CSV files
+- **Navigation** - Intuitive switching between different views and operations
+
+### Demo Options
+
+Customize the demo experience with command-line arguments:
+
+```bash
+# Run in headless mode (no browser window)
+uv run python demo/demo.py --headless
+
+# Adjust demo speed (slow, normal, or fast)
+uv run python demo/demo.py --speed slow
+
+# Capture screenshots during demo
+uv run python demo/demo.py --screenshots
+
+# Keep demo database after completion
+uv run python demo/demo.py --keep-db
+
+# Use custom port
+uv run python demo/demo.py --port 8000
+
+# Combine multiple options
+uv run python demo/demo.py --headless --speed fast --screenshots
+```
+
+**Screenshots** are saved to `demo_screenshots/` with timestamps for each action.
+
+### What You'll See
+
+![Inventory App Interface](demo_interface_mockup.svg)
+*Interactive demo showing the search functionality with sample inventory results. The interface features a clean Bootstrap design with menu buttons for CSV upload, adding items, and searching. The search view displays a dropdown for criteria selection and shows formatted results with complete item details including ID, description, pricing, and inventory metadata.*
+
+The Inventory Application features a clean Bootstrap-based interface with:
+
+1. **Main Menu** - Three primary action buttons:
+   - Add .csv (CSV file upload)
+   - Add Item (Single item entry form)
+   - Search Item (Multi-criteria search)
+
+2. **Search View** - Dropdown selector for search criteria (ID, description, last_sold, shelf_life, department, price, unit, x_for, cost) with results displayed in a formatted list
+
+3. **Add Item Form** - Comprehensive data entry with fields for:
+   - ID, Description, Last Sold Date
+   - Shelf Life, Department
+   - Price, Unit of Measurement
+   - xFor (quantity), Cost
+
+4. **Results Display** - Formatted list showing all item details with count of items found
+
+> **Note**: Run `uv run python demo/demo.py --screenshots` to capture your own screenshots of the application interface. The demo includes automated interactions showcasing all major features.
+
 ## Database Management
 
 This database uses PostgreSQL with SQLAlchemy 2.0 ORM.

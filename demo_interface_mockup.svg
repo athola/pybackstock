@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1280" height="800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1280" height="800" fill="#f5f5f5"/>
+
+  <!-- Browser Chrome -->
+  <rect width="1280" height="40" fill="#e0e0e0"/>
+  <text x="20" y="25" font-family="Arial, sans-serif" font-size="14" fill="#666">
+    ● ● ● http://127.0.0.1:5000
+  </text>
+
+  <!-- Main Container -->
+  <rect x="40" y="60" width="1200" height="720" fill="white" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="60" y="110" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#333">
+    Inventory Application
+  </text>
+
+  <!-- Menu Label -->
+  <text x="60" y="160" font-family="Arial, sans-serif" font-size="18" fill="#555">
+    Menu:
+  </text>
+
+  <!-- CSV Upload Section -->
+  <rect x="60" y="180" width="200" height="100" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
+  <text x="70" y="205" font-family="Arial, sans-serif" font-size="14" fill="#555">
+    Add .csv:
+  </text>
+  <rect x="70" y="215" width="180" height="30" fill="white" stroke="#ccc" stroke-width="1"/>
+  <text x="80" y="235" font-family="Arial, sans-serif" font-size="12" fill="#999">
+    Choose file...
+  </text>
+  <rect x="70" y="250" width="80" height="25" fill="#5cb85c" stroke="#4cae4c" stroke-width="1"/>
+  <text x="85" y="267" font-family="Arial, sans-serif" font-size="12" fill="white" font-weight="bold">
+    Submit
+  </text>
+
+  <!-- Add Item Button -->
+  <rect x="280" y="180" width="180" height="45" fill="#CE2029" stroke="#b01823" stroke-width="1" rx="4"/>
+  <text x="335" y="208" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" text-anchor="middle">
+    Add Item
+  </text>
+
+  <!-- Search Item Button -->
+  <rect x="480" y="180" width="180" height="45" fill="#CE2029" stroke="#b01823" stroke-width="1" rx="4"/>
+  <text x="540" y="208" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" text-anchor="middle">
+    Search Item
+  </text>
+
+  <!-- Search Form (Active View) -->
+  <g id="search-form">
+    <text x="60" y="320" font-family="Arial, sans-serif" font-size="14" fill="#555">
+      Search By:
+    </text>
+
+    <!-- Dropdown -->
+    <rect x="60" y="330" width="500" height="35" fill="white" stroke="#ccc" stroke-width="1" rx="4"/>
+    <text x="75" y="353" font-family="Arial, sans-serif" font-size="14" fill="#333">
+      description ▼
+    </text>
+
+    <!-- Search Input -->
+    <text x="60" y="390" font-family="Arial, sans-serif" font-size="14" fill="#555">
+      Search Term:
+    </text>
+    <rect x="60" y="400" width="500" height="35" fill="white" stroke="#ccc" stroke-width="1" rx="4"/>
+    <text x="75" y="423" font-family="Arial, sans-serif" font-size="14" fill="#999">
+      Enter item description
+    </text>
+
+    <!-- Search Button -->
+    <rect x="60" y="450" width="100" height="35" fill="#5cb85c" stroke="#4cae4c" stroke-width="1" rx="4"/>
+    <text x="110" y="473" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" text-anchor="middle">
+      Search
+    </text>
+  </g>
+
+  <!-- Results Section -->
+  <g id="results">
+    <text x="60" y="520" font-family="Arial, sans-serif" font-size="16" fill="#555" font-weight="bold">
+      Found 3 items:
+    </text>
+
+    <!-- Result Item 1 -->
+    <text x="60" y="555" font-family="Arial, sans-serif" font-size="12" fill="#333">
+      ID: 1001 | Description: Fresh Apples | Last Sold: 2024-11-10 | Shelf Life: 7d | Department: Produce | Price: $2.99 | Unit: lb | xFor: 1 | Cost: $1.50
+    </text>
+
+    <!-- Result Item 2 -->
+    <text x="60" y="585" font-family="Arial, sans-serif" font-size="12" fill="#333">
+      ID: 1045 | Description: Apple Juice | Last Sold: 2024-11-12 | Shelf Life: 90d | Department: Beverages | Price: $3.49 | Unit: bottle | xFor: 1 | Cost: $2.00
+    </text>
+
+    <!-- Result Item 3 -->
+    <text x="60" y="615" font-family="Arial, sans-serif" font-size="12" fill="#333">
+      ID: 2134 | Description: Apple Pie | Last Sold: 2024-11-14 | Shelf Life: 5d | Department: Bakery | Price: $5.99 | Unit: ea | xFor: 1 | Cost: $3.25
+    </text>
+  </g>
+
+  <!-- Footer -->
+  <text x="60" y="750" font-family="Arial, sans-serif" font-size="11" fill="#777">
+    Created by: Alex Thola | Contact: alexthola@gmail.com
+  </text>
+
+  <!-- Demo watermark -->
+  <text x="640" y="770" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle" font-style="italic">
+    Interactive Demo - Showing Search Functionality with Sample Results
+  </text>
+</svg>
