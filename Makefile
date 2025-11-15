@@ -7,7 +7,7 @@ help:
 	@echo "  make format     - Auto-format code with ruff"
 	@echo "  make test       - Run pytest test suite"
 	@echo "  make typecheck  - Run mypy and ty type checking"
-	@echo "  make demo       - Run interactive demo of the application"
+	@echo "  make demo       - Run interactive demo (Options: --headless, --speed [slow|normal|fast], --screenshots, --keep-db, --port)"
 	@echo "  make clean      - Remove cache files"
 	@echo "  make all        - Run format, lint, typecheck, and test"
 
