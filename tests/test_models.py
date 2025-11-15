@@ -1,13 +1,13 @@
 """Unit tests for database models."""
 
-from datetime import date
-
 import pytest
 from flask import Flask
 
+from tests.conftest import GroceryData
+
 
 @pytest.mark.unit
-def test_grocery_model_creation(app: Flask, sample_grocery_data: dict[str, str | int | date | None]) -> None:
+def test_grocery_model_creation(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test creating a Grocery model instance."""
     from models import Grocery
 
@@ -25,7 +25,7 @@ def test_grocery_model_creation(app: Flask, sample_grocery_data: dict[str, str |
 
 
 @pytest.mark.unit
-def test_grocery_model_iter(app: Flask, sample_grocery_data: dict[str, str | int | date | None]) -> None:
+def test_grocery_model_iter(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test Grocery model iteration for JSON serialization."""
     from models import Grocery
 
@@ -66,7 +66,7 @@ def test_grocery_model_none_last_sold(app: Flask) -> None:
 
 
 @pytest.mark.unit
-def test_grocery_model_save_to_db(app: Flask, sample_grocery_data: dict[str, str | int | date | None]) -> None:
+def test_grocery_model_save_to_db(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test saving Grocery model to database."""
     from inventoryApp import db
     from models import Grocery

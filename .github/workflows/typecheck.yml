@@ -47,4 +47,4 @@ jobs:
       run: uv sync --all-extras
 
     - name: Run Ty
-      run: uv run ty check . --ignore invalid-assignment --ignore invalid-return-type --ignore no-matching-overload --ignore invalid-argument-type --exclude migrations --exclude manage.py
+      run: uv run ty check . --exclude migrations --exclude manage.py

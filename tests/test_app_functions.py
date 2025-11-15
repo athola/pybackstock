@@ -1,10 +1,11 @@
 """Unit tests for application helper functions."""
 
-from datetime import date
 from typing import Any
 
 import pytest
 from flask import Flask
+
+from tests.conftest import GroceryData
 
 
 @pytest.mark.unit
@@ -92,7 +93,7 @@ def test_report_exception(app: Flask, capsys: Any) -> None:  # type: ignore[no-u
 
 
 @pytest.mark.unit
-def test_add_item_new(app: Flask, sample_grocery_data: dict[str, str | int | date | None]) -> None:
+def test_add_item_new(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test adding a new item."""
     from inventoryApp import add_item
     from models import Grocery
@@ -109,9 +110,7 @@ def test_add_item_new(app: Flask, sample_grocery_data: dict[str, str | int | dat
 
 
 @pytest.mark.unit
-def test_add_item_duplicate(
-    app: Flask, sample_grocery: None, sample_grocery_data: dict[str, str | int | date | None]
-) -> None:
+def test_add_item_duplicate(app: Flask, sample_grocery: None, sample_grocery_data: GroceryData) -> None:
     """Test adding a duplicate item."""
     from inventoryApp import add_item
     from models import Grocery
