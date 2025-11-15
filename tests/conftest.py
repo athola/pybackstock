@@ -2,9 +2,25 @@
 
 import os
 from datetime import date
+from typing import TypedDict
 
 import pytest
 from flask import Flask
+
+
+class GroceryData(TypedDict):
+    """Type definition for grocery item data."""
+
+    item_id: int
+    description: str
+    last_sold: date | str | None
+    shelf_life: str
+    department: str | None
+    price: str
+    unit: str
+    x_for: int
+    cost: str
+
 
 # Set test environment before importing app
 os.environ["APP_SETTINGS"] = "config.TestingConfig"
@@ -62,7 +78,7 @@ def runner(app: Flask):  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture()
-def sample_grocery_data() -> dict[str, str | int | date | None]:
+def sample_grocery_data() -> GroceryData:
     """Sample grocery item data for testing.
 
     Returns:
@@ -82,7 +98,7 @@ def sample_grocery_data() -> dict[str, str | int | date | None]:
 
 
 @pytest.fixture()
-def sample_grocery(app: Flask, sample_grocery_data: dict[str, str | int | date | None]) -> None:
+def sample_grocery(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Create a sample grocery item in the database.
 
     Args:

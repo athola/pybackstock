@@ -1,0 +1,50 @@
+name: Type Checking
+
+on: [push, pull_request]
+
+jobs:
+  mypy:
+    name: MyPy Type Checking
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run MyPy
+      run: uv run mypy .
+
+  ty:
+    name: Ty Type Checking
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run Ty
+      run: uv run ty check . --exclude migrations

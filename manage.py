@@ -1,16 +1,16 @@
+"""Management script for the inventory application."""
+
 import os
 
-from flask_migrate import Migrate, MigrateCommand
-from flask_script import Manager
+from flask_migrate import Migrate
 
 from inventoryApp import app, db
 
-app.config.from_object(os.environ["APP_SETTINGS"])
+# Configure the app
+app.config.from_object(os.environ.get("APP_SETTINGS", "config.DevelopmentConfig"))
 
+# Initialize Flask-Migrate
 migrate = Migrate(app, db)
-manager = Manager(app)
-
-manager.add_command("db", MigrateCommand)
 
 if __name__ == "__main__":
-    manager.run()
+    app.run()

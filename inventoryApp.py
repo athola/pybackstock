@@ -235,9 +235,7 @@ def get_matching_items(search_column: str, search_item: str) -> Query[Any] | dic
 
     # Build and return query
     if search_column == "last_sold":
-        query = Grocery.query.filter(
-            func.to_char(Grocery.last_sold, "%YYYY-MM-DD%").ilike(search_term)
-        )
+        query = Grocery.query.filter(func.to_char(Grocery.last_sold, "%YYYY-MM-DD%").ilike(search_term))
     else:
         query = Grocery.query.filter(getattr(Grocery, search_column).ilike(search_term))
 
@@ -299,9 +297,7 @@ def add_item(item: Grocery, errors: list[str], items: list[Any]) -> tuple[list[s
     return errors, items
 
 
-def iterate_through_csv(
-    csv_input: Any, errors: list[str], items: list[Any]
-) -> None:
+def iterate_through_csv(csv_input: Any, errors: list[str], items: list[Any]) -> None:
     """Process CSV input and add items to database.
 
     Args:
