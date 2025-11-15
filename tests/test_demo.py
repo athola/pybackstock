@@ -266,11 +266,17 @@ class TestDemoErrorHandling:
         """Test demo handles browser launch failure."""
         from demo.demo import DemoRunner
 
-        with patch("playwright.sync_api.sync_playwright") as mock_playwright:
-            mock_playwright.side_effect = Exception("Browser not found")
+        with patch("demo.demo.sync_playwright") as mock_pw:
+            # Mock the context manager and chromium launch
+            mock_context = MagicMock()
+            mock_chromium = MagicMock()
+            mock_error = RuntimeError("Browser not found")
+            mock_chromium.launch.side_effect = mock_error
+            mock_context.__enter__.return_value.chromium = mock_chromium
+            mock_pw.return_value = mock_context
 
             runner = DemoRunner()
-            with pytest.raises(Exception):
+            with pytest.raises(RuntimeError):
                 runner.run()
 
     def test_demo_cleanup_on_error(self) -> None:
@@ -281,10 +287,7 @@ class TestDemoErrorHandling:
         demo_db = Path("demo.db")
         demo_db.touch()
 
-        # Simulate error during demo
-        try:
-            raise Exception("Test error")
-        except Exception:
-            runner.cleanup()
+        # Test cleanup removes database
+        runner.cleanup()
 
         assert not demo_db.exists()
