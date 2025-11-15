@@ -1,10 +1,15 @@
+"""Application configuration classes for different environments."""
+
 import os
 import secrets
+from pathlib import Path
 
-basedir = os.path.abspath(os.path.dirname(__file__))
+basedir = Path(__file__).parent.resolve()
 
 
-class Config(object):
+class Config:
+    """Base configuration class with common settings."""
+
     DEBUG = False
     TESTING = False
     CSRF_ENABLED = True
@@ -18,18 +23,26 @@ class Config(object):
 
 
 class ProductionConfig(Config):
+    """Production environment configuration."""
+
     DEBUG = False
 
 
 class StagingConfig(Config):
+    """Staging environment configuration."""
+
     DEVELOPMENT = True
     DEBUG = True
 
 
 class DevelopmentConfig(Config):
+    """Development environment configuration."""
+
     DEVELOPMENT = True
     DEBUG = True
 
 
 class TestingConfig(Config):
+    """Testing environment configuration."""
+
     TESTING = True

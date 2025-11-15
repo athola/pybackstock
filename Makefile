@@ -1,97 +1,39 @@
-# =============================================================================
-# InventoryApp Makefile
-# =============================================================================
+.PHONY: help lint test typecheck format clean install
 
-# Project metadata
-PROJECT_NAME := inventory-app
-PYTHON_VERSION := 3.11
+help:
+	@echo "Available commands:"
+	@echo "  make install    - Install dependencies"
+	@echo "  make lint       - Run ruff linter with comprehensive checks"
+	@echo "  make format     - Auto-format code with ruff"
+	@echo "  make test       - Run pytest test suite"
+	@echo "  make typecheck  - Run mypy type checking"
+	@echo "  make clean      - Remove cache files"
+	@echo "  make all        - Run format, lint, typecheck, and test"
 
-# Paths
-SRC_FILES := *.py
+install:
+	uv sync
 
-# Commands
-UV_CMD := uv
-PYTHON_CMD := python3
+lint:
+	uv run ruff check .
 
-# Development tools
-LINTER := ruff
-FORMATTER := ruff
-TYPECHECK := mypy
-TEST_RUNNER := pytest
+format:
+	uv run ruff format .
+	uv run ruff check --fix .
 
-# Colors for output
-BOLD := \033[1m
-GREEN := \033[32m
-BLUE := \033[34m
-YELLOW := \033[33m
-RED := \033[31m
-RESET := \033[0m
+test:
+	uv run pytest -v --cov=. --cov-report=term-missing --cov-report=html
 
-# =============================================================================
-# PHONY TARGETS
-# =============================================================================
+typecheck:
+	uv run mypy .
 
-.PHONY: help install lint typecheck test check-all clean
+clean:
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name ".coverage" -delete 2>/dev/null || true
 
-# =============================================================================
-# HELP AND INFORMATION
-# =============================================================================
-
-help: ## Show this help message
-	@echo "$(BOLD)$(PROJECT_NAME) - Flask Inventory Management$(RESET)"
-	@echo ""
-	@echo "$(BLUE)Available commands:$(RESET)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		sort | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(RESET) %s\n", $$1, $$2}'
-
-# =============================================================================
-# DEPENDENCY MANAGEMENT
-# =============================================================================
-
-install: ## Install all dependencies including dev tools
-	@echo "$(BLUE)Installing dependencies...$(RESET)"
-	$(UV_CMD) pip install -r requirements.txt
-	@echo "$(GREEN)✓ Dependencies installed$(RESET)"
-
-# =============================================================================
-# CODE QUALITY TOOLS
-# =============================================================================
-
-lint: ## Run linting checks with ruff
-	@echo "$(BLUE)Running linting...$(RESET)"
-	$(UV_CMD) run $(LINTER) check $(SRC_FILES)
-	@echo "$(BLUE)Running format check...$(RESET)"
-	$(UV_CMD) run $(FORMATTER) format --check $(SRC_FILES)
-	@echo "$(GREEN)✓ Linting passed$(RESET)"
-
-typecheck: ## Run type checking with mypy
-	@echo "$(BLUE)Running type checking...$(RESET)"
-	$(UV_CMD) run $(TYPECHECK) $(SRC_FILES) --ignore-missing-imports
-	@echo "$(GREEN)✓ Type checking passed$(RESET)"
-
-test: ## Run all tests with pytest
-	@echo "$(BLUE)Running tests...$(RESET)"
-	$(UV_CMD) run $(TEST_RUNNER) tests/ -v
-	@echo "$(GREEN)✓ Tests passed$(RESET)"
-
-# =============================================================================
-# COMBINED CHECKS
-# =============================================================================
-
-check-all: lint typecheck test ## Run all checks (lint, typecheck, test)
-	@echo "$(GREEN)✓ All checks passed!$(RESET)"
-
-# =============================================================================
-# CLEANUP TARGETS
-# =============================================================================
-
-clean: ## Clean up cache files
-	@echo "$(BLUE)Cleaning cache files...$(RESET)"
-	rm -rf __pycache__
-	rm -rf .pytest_cache
-	rm -rf .mypy_cache
-	rm -rf .ruff_cache
-	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@echo "$(GREEN)✓ Cache cleaned$(RESET)"
+all: format lint typecheck test
+	@echo "All checks passed!"
