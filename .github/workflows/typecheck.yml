@@ -47,4 +47,4 @@ jobs:
       run: uv sync --all-extras
 
     - name: Run Ty
-      run: uv run ty check . --exclude migrations
+      run: uv run ty check . --exclude migrations --exclude demo

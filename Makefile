@@ -1,4 +1,4 @@
-.PHONY: help lint test typecheck format clean install
+.PHONY: help lint test typecheck format clean install demo
 
 help:
 	@echo "Available commands:"
@@ -7,6 +7,7 @@ help:
 	@echo "  make format     - Auto-format code with ruff"
 	@echo "  make test       - Run pytest test suite"
 	@echo "  make typecheck  - Run mypy and ty type checking"
+	@echo "  make demo       - Run interactive demo of the application"
 	@echo "  make clean      - Remove cache files"
 	@echo "  make all        - Run format, lint, typecheck, and test"
 
@@ -25,7 +26,13 @@ test:
 
 typecheck:
 	uv run mypy .
-	uv run ty check . --exclude migrations
+	uv run ty check . --exclude migrations --exclude demo
+
+demo:
+	@echo "Installing Playwright browsers (if not already installed)..."
+	@uv run playwright install chromium --with-deps 2>/dev/null || true
+	@echo "Starting interactive demo..."
+	uv run python demo/demo.py
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

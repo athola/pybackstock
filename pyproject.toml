@@ -25,6 +25,7 @@ dev = [
     "mypy>=1.11.0",
     "ty",
     "types-requests>=2.32.0",
+    "playwright>=1.40.0",
 ]
 
 [tool.ruff]
@@ -37,6 +38,7 @@ exclude = [
     ".venv",
     "__pycache__",
     "migrations",
+    "demo",
 ]
 
 [tool.ruff.lint]
@@ -155,7 +157,7 @@ warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
 plugins = ["sqlalchemy.ext.mypy.plugin"]
-exclude = ["migrations/", "tests/"]
+exclude = ["migrations/", "tests/", "demo/"]
 
 [[tool.mypy.overrides]]
 module = [
