@@ -82,7 +82,7 @@ def test_get_matching_items_wildcard(app: Flask, sample_grocery: None) -> None:
 
 
 @pytest.mark.unit
-def test_report_exception(app: Flask, capsys: Any) -> None:  # type: ignore[no-untyped-def]
+def test_report_exception(app: Flask, capsys: Any) -> None:
     """Test exception reporting.
 
     Verifies that:

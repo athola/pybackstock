@@ -26,7 +26,7 @@ test:
 
 typecheck:
 	uv run mypy .
-	uv run ty check . --exclude migrations --exclude demo
+	uv run ty check . --exclude migrations
 
 demo:
 	@echo "Installing Playwright browsers (if not already installed)..."

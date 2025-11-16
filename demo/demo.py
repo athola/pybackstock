@@ -28,7 +28,7 @@ class DemoReport:
 
     def __init__(self) -> None:
         """Initialize demo report."""
-        self.actions: list[dict[str, str]] = []
+        self.actions: list[dict[str, Any]] = []
         self.start_time = datetime.now()
 
     def add_action(self, action: str, status: str, message: str) -> None:
@@ -207,7 +207,7 @@ def wait_for_flask(url: str = "http://127.0.0.1:5000", max_retries: int = 10, de
     Returns:
         True if Flask started successfully, False otherwise.
     """
-    for attempt in range(max_retries):
+    for _attempt in range(max_retries):
         if verify_flask_running(url):
             return True
         time.sleep(delay)
@@ -246,7 +246,12 @@ class DemoRunner:
     """Main demo runner class."""
 
     def __init__(
-        self, headless: bool = False, speed: str = "normal", screenshots: bool = False, keep_db: bool = False, port: int = 5000
+        self,
+        headless: bool = False,
+        speed: str = "normal",
+        screenshots: bool = False,
+        keep_db: bool = False,
+        port: int = 5000,
     ) -> None:
         """Initialize demo runner.
 
@@ -448,7 +453,7 @@ class DemoRunner:
         print("\n" + "=" * 70)
         print("  INVENTORY APP - INTERACTIVE DEMONSTRATION")
         print("=" * 70)
-        print(f"\nConfiguration:")
+        print("\nConfiguration:")
         print(f"  * Mode: {'Headless' if self.headless else 'Headed'}")
         print(f"  * Speed: {self.speed}")
         print(f"  * Screenshots: {'Enabled' if self.screenshots else 'Disabled'}")

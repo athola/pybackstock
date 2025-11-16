@@ -8,7 +8,7 @@ import pytest
 
 
 @pytest.fixture()
-def csrf_app():
+def csrf_app() -> Any:
     """Create a Flask app with CSRF protection enabled for security testing."""
     from inventoryApp import app
 
