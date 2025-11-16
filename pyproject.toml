@@ -116,7 +116,7 @@ ignore = [
 # Tests - common ignores for all test files
 "tests/*" = ["S101", "D103", "ANN201", "ANN401", "PLR2004", "PT001", "ARG001"]
 # Deployment tests need additional ignores for file operations and subprocess
-"tests/test_deployment.py" = ["PTH123", "S104", "S607", "PLC0415"]
+"tests/test_deployment.py" = ["PTH123", "S104", "S607"]
 # Demo files
 "demo/*" = ["T201", "S603", "S607", "PLR2004", "D103", "ANN401", "DTZ005", "FBT001", "FBT002", "TRY300", "BLE001"]
 # Scripts - utility scripts that need print, subprocess, etc.

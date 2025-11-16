@@ -4,7 +4,10 @@ These tests ensure that the application is correctly configured for
 deployment on Render and other production environments.
 """
 
+import importlib
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -266,10 +269,6 @@ def test_config_handles_missing_database_url() -> None:
     This prevents the SQLAlchemy ArgumentError that caused the "Not found"
     issue on Render when DATABASE_URL was not properly configured.
     """
-    import importlib
-    import os
-    import sys
-
     # Save original DATABASE_URL if it exists
     original_db_url = os.environ.get("DATABASE_URL")
 
@@ -314,10 +313,6 @@ def test_config_handles_empty_database_url() -> None:
     Empty string DATABASE_URL previously caused SQLAlchemy to fail with:
     'Could not parse SQLAlchemy URL from given URL string'
     """
-    import importlib
-    import os
-    import sys
-
     # Save original DATABASE_URL if it exists
     original_db_url = os.environ.get("DATABASE_URL")
 
@@ -361,8 +356,6 @@ def test_gunicorn_boots_without_database_url() -> None:
     This is critical for preventing deployment failures. The application should
     start even if DATABASE_URL is not configured, using the SQLite fallback.
     """
-    import os
-
     # Save original DATABASE_URL if it exists
     original_db_url = os.environ.get("DATABASE_URL")
 
@@ -423,10 +416,6 @@ def test_app_can_import_without_database_url() -> None:
     This verifies that importing the app doesn't immediately crash when
     DATABASE_URL is missing.
     """
-    import importlib
-    import os
-    import sys
-
     # Save original DATABASE_URL if it exists
     original_db_url = os.environ.get("DATABASE_URL")
 
@@ -469,10 +458,6 @@ def test_app_can_import_without_database_url() -> None:
 @pytest.mark.integration
 def test_config_postgres_url_conversion() -> None:
     """Test that Config properly converts postgres:// to postgresql:// URLs."""
-    import importlib
-    import os
-    import sys
-
     # Save original DATABASE_URL if it exists
     original_db_url = os.environ.get("DATABASE_URL")
 
