@@ -27,11 +27,12 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 csrf = CSRFProtect(app)
 
 # Configure Talisman for security headers
-# Only enforce HTTPS in production
+# Disable HTTPS enforcement in development and testing, enable in production
+is_production = not app.config.get("DEBUG", False) and not app.config.get("TESTING", False)
 talisman = Talisman(
     app,
-    force_https=not app.config.get("DEBUG", False),
-    strict_transport_security=not app.config.get("DEBUG", False),
+    force_https=is_production,
+    strict_transport_security=is_production,
     content_security_policy={
         "default-src": "'self'",
         "script-src": ["'self'", "'unsafe-inline'", "code.jquery.com", "netdna.bootstrapcdn.com"],

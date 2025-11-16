@@ -55,12 +55,19 @@ def test_get_matching_items_by_description(app: Flask, sample_grocery: None) -> 
 
 @pytest.mark.unit
 def test_get_matching_items_sql_injection_protection(app: Flask) -> None:
-    """Test SQL injection protection."""
+    """Test SQL injection protection via SQLAlchemy ORM.
+
+    SQLAlchemy uses parameterized queries automatically, so malicious
+    input like 'DROP TABLE' is treated as a literal search string.
+    """
     from inventoryApp import get_matching_items
 
     with app.app_context():
+        # Should return a Query object, not execute malicious SQL
         result = get_matching_items("description", "DROP TABLE")
-        assert result == {}
+        # Verify it's a Query object (safe) and executing it returns no results
+        items = list(result)
+        assert len(items) == 0  # No items with description "DROP TABLE"
 
 
 @pytest.mark.unit
@@ -76,7 +83,12 @@ def test_get_matching_items_wildcard(app: Flask, sample_grocery: None) -> None:
 
 @pytest.mark.unit
 def test_report_exception(app: Flask, capsys: Any) -> None:  # type: ignore[no-untyped-def]
-    """Test exception reporting."""
+    """Test exception reporting.
+
+    Verifies that:
+    1. Detailed errors are logged server-side (stdout)
+    2. Generic errors are shown to users (no internal details)
+    """
     from inventoryApp import report_exception
 
     with app.app_context():
@@ -84,12 +96,15 @@ def test_report_exception(app: Flask, capsys: Any) -> None:  # type: ignore[no-u
         ex = ValueError("Test error")
         result = report_exception(ex, "Error: ", errors)
 
+        # User-facing error should be generic (no exception details)
         assert len(result) == 1
-        assert "Test error" in result[0]
-        assert "Error: " in result[0]
+        assert result[0] == "Error:"
+        assert "Test error" not in result[0]  # Security: don't expose details
 
+        # Server-side log should contain full details
         captured = capsys.readouterr()
         assert "Test error" in captured.out
+        assert "line no:" in captured.out
 
 
 @pytest.mark.unit

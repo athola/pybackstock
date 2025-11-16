@@ -60,4 +60,4 @@ class TestingConfig(Config):
     """Testing environment configuration."""
 
     TESTING = True
-    WTF_CSRF_ENABLED = True  # Enable CSRF protection in tests to verify it works
+    WTF_CSRF_ENABLED = False  # Disable CSRF in tests (use dedicated security tests for CSRF testing)
