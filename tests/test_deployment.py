@@ -54,9 +54,7 @@ def test_gunicorn_binding_configuration() -> None:
     # Verify correct binding to all interfaces (0.0.0.0) and PORT env var
     assert "--bind" in start_command, "Gunicorn startCommand missing --bind flag"
     assert "0.0.0.0" in start_command, "Gunicorn not binding to 0.0.0.0 (all interfaces)"
-    assert "$PORT" in start_command or "${PORT}" in start_command, (
-        "Gunicorn not using $PORT environment variable"
-    )
+    assert "$PORT" in start_command or "${PORT}" in start_command, "Gunicorn not using $PORT environment variable"
 
 
 @pytest.mark.integration
@@ -206,9 +204,7 @@ def test_gunicorn_syntax() -> None:
     if bind_idx is not None and bind_idx + 1 < len(parts):
         bind_address = parts[bind_idx + 1]
         assert "0.0.0.0" in bind_address, "Bind address should include 0.0.0.0"
-        assert "$PORT" in bind_address or "${PORT}" in bind_address, (
-            "Bind address should include $PORT variable"
-        )
+        assert "$PORT" in bind_address or "${PORT}" in bind_address, "Bind address should include $PORT variable"
 
 
 @pytest.mark.integration
