@@ -1,0 +1,55 @@
+name: Webpage Content Validation
+
+# This workflow validates that the webpage loads correctly and displays
+# all expected content, ensuring PRs don't break the webpage functionality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-webpage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run webpage content validation tests
+      run: |
+        echo "🌐 Testing webpage content and display functionality..."
+        uv run pytest tests/test_webpage_content.py -v --tb=short
+
+    - name: Run all integration tests
+      run: |
+        echo "🔍 Running all integration tests to ensure complete functionality..."
+        uv run pytest -m integration -v --tb=short
+
+    - name: Test application startup
+      run: |
+        echo "🚀 Testing application startup..."
+        uv run pytest tests/test_app_functions.py -v --tb=short
+
+    - name: Generate test report
+      if: always()
+      run: |
+        echo "📊 Test Results Summary"
+        echo "======================"
+        echo "✅ Webpage content validation completed"
+        echo "✅ Integration tests completed"
+        echo "✅ Application startup tests completed"
