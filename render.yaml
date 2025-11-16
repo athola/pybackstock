@@ -9,7 +9,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install uv && uv sync --frozen"
-    startCommand: "uv run gunicorn 'src.pybackstock.app:app'"
+    startCommand: "uv run gunicorn 'src.pybackstock.app:app' --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.14
