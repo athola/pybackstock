@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from src.pybackstock.app import app
+
 
 @pytest.mark.integration
 def test_render_yaml_exists() -> None:
@@ -150,14 +152,9 @@ def test_gunicorn_can_import_app() -> None:
 
     This simulates what happens when Gunicorn tries to load the application.
     """
-    try:
-        # Import the app to verify the module path is correct
-        from src.pybackstock.app import app
-
-        assert app is not None, "Failed to import Flask app"
-        assert hasattr(app, "config"), "Imported object is not a Flask app"
-    except ImportError as e:
-        pytest.fail(f"Failed to import app module: {e}")
+    # The import at the top-level already validates that the module can be imported
+    assert app is not None, "Failed to import Flask app"
+    assert hasattr(app, "config"), "Imported object is not a Flask app"
 
 
 @pytest.mark.integration
@@ -236,8 +233,6 @@ def test_index_route_responds() -> None:
     This validates that the health check endpoint configured in render.yaml
     will work correctly.
     """
-    from src.pybackstock.app import app
-
     with app.test_client() as client:
         response = client.get("/")
         assert response.status_code == 200, "Index route should return 200 OK"
