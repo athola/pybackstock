@@ -137,7 +137,7 @@ export DATABASE_URL="postgresql://localhost/backstock_dev"
 
 ### Render
 - **Dashboard**: https://dashboard.render.com
-- **Your App**: https://backstock.onrender.com
+- **Your App**: https://pybackstock.onrender.com
 - **Documentation**: https://render.com/docs
 
 ### GitHub

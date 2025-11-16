@@ -38,7 +38,7 @@ Render will now:
 1. Check deployment status in Render dashboard
 2. Click on your `backstock` service
 3. View the **Logs** tab for deployment progress
-4. Once deployed, click the URL (e.g., `https://backstock.onrender.com`)
+4. Once deployed, click the URL (e.g., `https://pybackstock.onrender.com`)
 
 ## Step 4: Configure GitHub Secret (for Backups)
 
@@ -78,7 +78,7 @@ Render automatically configures these via `render.yaml`:
 
 After deployment:
 
-- **Application**: `https://backstock.onrender.com` (or your assigned URL)
+- **Application**: `https://pybackstock.onrender.com` (or your assigned URL)
 - **Render Dashboard**: https://dashboard.render.com
 - **Database Console**: Dashboard → `backstock-db`
 

@@ -40,7 +40,7 @@ cp .env.example .env
 ### Running app:
 
 **Hosted Demo:**
-- Live Demo: https://backstock.onrender.com (Render - Free Tier)
+- Live Demo: https://pybackstock.onrender.com (Render - Free Tier)
 
 **To run locally** (with virtual environment activated):
 ```bash
@@ -185,7 +185,7 @@ This application is configured for easy deployment on Render with automatic depl
 - [Troubleshooting tips](wiki/deployment/Troubleshooting.md)
 - [Quick reference](wiki/deployment/Quick-Reference.md)
 
-**Your App URL:** `https://backstock.onrender.com` (or your assigned URL)
+**Your App URL:** `https://pybackstock.onrender.com` (or your assigned URL)
 
 ## Security Updates
 

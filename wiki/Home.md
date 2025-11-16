@@ -79,7 +79,7 @@ When adding new documentation:
 ## External Resources
 
 - **Repository**: [GitHub](https://github.com/YOUR_USERNAME/backstock)
-- **Live Demo**: [Render](https://backstock.onrender.com)
+- **Live Demo**: [Render](https://pybackstock.onrender.com)
 - **Render Docs**: [render.com/docs](https://render.com/docs)
 - **Flask Docs**: [flask.palletsprojects.com](https://flask.palletsprojects.com/)
 
