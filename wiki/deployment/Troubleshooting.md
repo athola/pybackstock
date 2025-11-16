@@ -22,8 +22,8 @@ Common issues and solutions for Render deployment.
 
 2. **Verify dependencies:**
    ```bash
-   # Ensure requirements.txt is up to date
-   pip freeze > requirements.txt
+   # Ensure pyproject.toml dependencies are correct
+   uv sync --frozen
    ```
 
 3. **Check build logs:**
@@ -287,15 +287,15 @@ Common issues and solutions for Render deployment.
 
 **Solutions:**
 
-1. **Use uv for faster installs:**
+1. **Using uv for faster installs:**
    ```yaml
-   # In render.yaml
-   buildCommand: "pip install uv && uv pip install -r requirements.txt"
+   # In render.yaml (already configured)
+   buildCommand: "pip install uv && uv sync --frozen"
    ```
 
 2. **Minimize dependencies:**
-   - Remove unused packages
-   - Use `pip-tools` to clean requirements.txt
+   - Remove unused packages from pyproject.toml
+   - Keep only necessary dependencies
 
 3. **Cache dependencies:**
    - Render caches between builds

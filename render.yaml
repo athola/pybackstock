@@ -8,8 +8,8 @@ services:
     name: pybackstock
     runtime: python
     plan: free
-    buildCommand: "pip install uv && uv pip install -r requirements.txt"
-    startCommand: "gunicorn 'src.pybackstock.app:app'"
+    buildCommand: "pip install uv && uv sync --frozen"
+    startCommand: "uv run gunicorn 'src.pybackstock.app:app'"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.14

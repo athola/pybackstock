@@ -18,20 +18,17 @@ This application uses [uv](https://github.com/astral-sh/uv) for fast, reliable d
 pip install uv
 ```
 
-2. Create virtual environment and install dependencies:
+2. Install dependencies (uv will automatically create a virtual environment):
 ```bash
-uv venv
-uv pip install -r requirements.txt
+uv sync
 ```
 
-3. Activate virtual environment:
+For development dependencies (testing, linting, etc.):
 ```bash
-source .venv/bin/activate  # On Linux/Mac
-# or
-.venv\Scripts\activate  # On Windows
+uv sync --all-extras
 ```
 
-4. Set up environment variables (copy .env.example to .env and configure):
+3. Set up environment variables (copy .env.example to .env and configure):
 ```bash
 cp .env.example .env
 # Edit .env with your configuration

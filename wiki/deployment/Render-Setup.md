@@ -103,7 +103,7 @@ Every push to `main` branch automatically triggers deployment:
 **Deployment Failed?**
 - Check Render dashboard **Logs** tab
 - Verify `runtime.txt` has Python 3.11.14
-- Ensure all dependencies are in `requirements.txt`
+- Ensure all dependencies are in `pyproject.toml`
 
 **Can't Access Application?**
 - Wait 5-10 minutes for initial SSL provisioning
