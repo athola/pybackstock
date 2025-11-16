@@ -1,4 +1,4 @@
-"""Security tests for the inventory application."""
+"""Security tests for the backstock application."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture()
 def csrf_app() -> Any:
     """Create a Flask app with CSRF protection enabled for security testing."""
-    from inventoryApp import app
+    from src.backstock import app
 
     # Temporarily enable CSRF for these specific tests
     app.config["WTF_CSRF_ENABLED"] = True
@@ -210,15 +210,22 @@ class TestInputValidation:
     def test_no_misleading_sql_injection_check(self) -> None:
         """Test that code doesn't contain ineffective SQL injection checks."""
         from pathlib import Path
+        import sys
 
-        import inventoryApp
+        # Import the app module (not the app instance from __init__)
+        import importlib.util
 
-        # Read the source code
-        source = Path(inventoryApp.__file__)
-        code = source.read_text()
+        app_module_path = Path("src/backstock/app.py").resolve()
+        spec = importlib.util.spec_from_file_location("src.backstock.app", app_module_path)
+        if spec and spec.loader:
+            app_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(app_module)
 
-        # Should not have naive "DROP TABLE" check
-        assert 'if "DROP TABLE" in search_item:' not in code
+            # Read the source code
+            code = app_module_path.read_text()
+
+            # Should not have naive "DROP TABLE" check
+            assert 'if "DROP TABLE" in search_item:' not in code
 
     def test_xss_protection_in_output(self, client: Any) -> None:
         """Test that user input is properly escaped in output."""

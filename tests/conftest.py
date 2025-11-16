@@ -1,4 +1,4 @@
-"""Shared test fixtures for the inventory application tests."""
+"""Shared test fixtures for the backstock application tests."""
 
 import os
 from datetime import date
@@ -23,7 +23,7 @@ class GroceryData(TypedDict):
 
 
 # Set test environment before importing app
-os.environ["APP_SETTINGS"] = "config.TestingConfig"
+os.environ["APP_SETTINGS"] = "src.backstock.config.TestingConfig"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 
@@ -34,7 +34,7 @@ def app() -> Flask:  # type: ignore[misc]
     Returns:
         Configured Flask test application.
     """
-    from inventoryApp import app, db
+    from src.backstock import app, db
 
     app.config.update(
         {
@@ -105,8 +105,7 @@ def sample_grocery(app: Flask, sample_grocery_data: GroceryData) -> None:
         app: The Flask application fixture.
         sample_grocery_data: Sample grocery data fixture.
     """
-    from inventoryApp import db
-    from models import Grocery
+    from src.backstock import db, Grocery
 
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)

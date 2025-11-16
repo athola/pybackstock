@@ -8,7 +8,7 @@ import pytest
 @pytest.mark.unit
 def test_config_base() -> None:
     """Test base Config class."""
-    from config import Config
+    from src.backstock.config import Config
 
     assert Config.DEBUG is False
     assert Config.TESTING is False
@@ -18,7 +18,7 @@ def test_config_base() -> None:
 @pytest.mark.unit
 def test_production_config() -> None:
     """Test ProductionConfig class."""
-    from config import ProductionConfig
+    from src.backstock.config import ProductionConfig
 
     assert ProductionConfig.DEBUG is False
     assert ProductionConfig.TESTING is False
@@ -27,7 +27,7 @@ def test_production_config() -> None:
 @pytest.mark.unit
 def test_development_config() -> None:
     """Test DevelopmentConfig class."""
-    from config import DevelopmentConfig
+    from src.backstock.config import DevelopmentConfig
 
     assert DevelopmentConfig.DEBUG is True
     assert DevelopmentConfig.DEVELOPMENT is True
@@ -36,7 +36,7 @@ def test_development_config() -> None:
 @pytest.mark.unit
 def test_testing_config() -> None:
     """Test TestingConfig class."""
-    from config import TestingConfig
+    from src.backstock.config import TestingConfig
 
     assert TestingConfig.TESTING is True
 
@@ -44,7 +44,7 @@ def test_testing_config() -> None:
 @pytest.mark.unit
 def test_staging_config() -> None:
     """Test StagingConfig class."""
-    from config import StagingConfig
+    from src.backstock.config import StagingConfig
 
     assert StagingConfig.DEBUG is True
     assert StagingConfig.DEVELOPMENT is True
@@ -61,10 +61,10 @@ def test_database_url_conversion() -> None:
     import importlib
     import sys
 
-    if "config" in sys.modules:
-        del sys.modules["config"]
+    if "src.backstock.config" in sys.modules:
+        del sys.modules["src.backstock.config"]
 
-    from config import Config
+    from src.backstock.config import Config
 
     assert Config.SQLALCHEMY_DATABASE_URI.startswith("postgresql://")
     assert "user:pass@localhost/db" in Config.SQLALCHEMY_DATABASE_URI
@@ -76,9 +76,9 @@ def test_database_url_conversion() -> None:
         del os.environ["DATABASE_URL"]
 
     # Reload module again to restore original state
-    if "config" in sys.modules:
-        del sys.modules["config"]
-    importlib.import_module("config")
+    if "src.backstock.config" in sys.modules:
+        del sys.modules["src.backstock.config"]
+    importlib.import_module("src.backstock.config")
 
 
 @pytest.mark.unit
@@ -91,7 +91,7 @@ def test_secret_key_generation() -> None:
     else:
         old_key = None
 
-    from config import Config
+    from src.backstock.config import Config
 
     assert Config.SECRET_KEY is not None
     assert len(Config.SECRET_KEY) > 0

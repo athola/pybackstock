@@ -1,7 +1,7 @@
 [project]
-name = "inventory-app"
+name = "backstock"
 version = "2.0.0"
-description = "Flask Inventory Management Application"
+description = "Flask Backstock Inventory Management Application"
 requires-python = ">=3.11"
 dependencies = [
     "flask>=3.0.0",
@@ -114,8 +114,8 @@ ignore = [
 "tests/*" = ["S101", "D103", "ANN201", "ANN401", "PLR2004", "PLC0415", "PT001", "ARG001", "F401", "E501"]
 "demo/*" = ["T201", "S603", "S607", "PLR2004", "D103", "ANN401", "DTZ005", "FBT001", "FBT002", "TRY300", "BLE001"]
 "migrations/*" = ["D", "ANN", "INP001"]
-"inventoryApp.py" = ["FBT001", "ANN401"]
-"models.py" = ["DTZ007"]
+"src/backstock/app.py" = ["FBT001", "ANN401"]
+"src/backstock/models.py" = ["DTZ007"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -136,7 +136,7 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--strict-markers",
-    "--cov=.",
+    "--cov=src",
     "--cov-report=term-missing",
 ]
 markers = [
