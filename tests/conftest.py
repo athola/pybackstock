@@ -6,6 +6,7 @@ import os
 os.environ["APP_SETTINGS"] = "src.pybackstock.config.TestingConfig"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
+from collections.abc import Generator
 from datetime import date
 from typing import TypedDict
 
@@ -31,10 +32,10 @@ class GroceryData(TypedDict):
 
 
 @pytest.fixture()
-def app() -> Flask:
+def app() -> Generator[Flask, None, None]:
     """Create and configure a test Flask application.
 
-    Returns:
+    Yields:
         Configured Flask test application.
     """
     flask_app.config.update(
