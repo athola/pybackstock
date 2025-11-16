@@ -3,14 +3,13 @@
 import pytest
 from flask import Flask
 
+from src.backstock import Grocery, db
 from tests.conftest import GroceryData
 
 
 @pytest.mark.unit
 def test_grocery_model_creation(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test creating a Grocery model instance."""
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         assert grocery.id == sample_grocery_data["item_id"]
@@ -27,8 +26,6 @@ def test_grocery_model_creation(app: Flask, sample_grocery_data: GroceryData) ->
 @pytest.mark.unit
 def test_grocery_model_iter(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test Grocery model iteration for JSON serialization."""
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         grocery_dict = dict(grocery)
@@ -47,8 +44,6 @@ def test_grocery_model_iter(app: Flask, sample_grocery_data: GroceryData) -> Non
 @pytest.mark.unit
 def test_grocery_model_none_last_sold(app: Flask) -> None:
     """Test Grocery model with None last_sold date."""
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(
             item_id=2,
@@ -68,9 +63,6 @@ def test_grocery_model_none_last_sold(app: Flask) -> None:
 @pytest.mark.unit
 def test_grocery_model_save_to_db(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test saving Grocery model to database."""
-    from inventoryApp import db
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         db.session.add(grocery)

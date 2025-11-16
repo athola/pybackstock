@@ -5,14 +5,14 @@ from typing import Any
 import pytest
 from flask import Flask
 
+from src.backstock.app import add_item, get_matching_items, report_exception
+from src.backstock.models import Grocery
 from tests.conftest import GroceryData
 
 
 @pytest.mark.unit
 def test_get_matching_items_by_id(app: Flask, sample_grocery: None) -> None:
     """Test searching for items by ID."""
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         result = get_matching_items("id", "1")
         items = list(result)
@@ -23,8 +23,6 @@ def test_get_matching_items_by_id(app: Flask, sample_grocery: None) -> None:
 @pytest.mark.unit
 def test_get_matching_items_by_id_not_found(app: Flask) -> None:
     """Test searching for non-existent ID."""
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         result = get_matching_items("id", "999")
         items = list(result)
@@ -34,8 +32,6 @@ def test_get_matching_items_by_id_not_found(app: Flask) -> None:
 @pytest.mark.unit
 def test_get_matching_items_invalid_id(app: Flask) -> None:
     """Test searching with invalid ID format."""
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         result = get_matching_items("id", "abc")
         assert result == {}
@@ -44,8 +40,6 @@ def test_get_matching_items_invalid_id(app: Flask) -> None:
 @pytest.mark.unit
 def test_get_matching_items_by_description(app: Flask, sample_grocery: None) -> None:
     """Test searching by description."""
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         result = get_matching_items("description", "Test")
         items = list(result)
@@ -60,8 +54,6 @@ def test_get_matching_items_sql_injection_protection(app: Flask) -> None:
     SQLAlchemy uses parameterized queries automatically, so malicious
     input like 'DROP TABLE' is treated as a literal search string.
     """
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         # Should return a Query object, not execute malicious SQL
         result = get_matching_items("description", "DROP TABLE")
@@ -73,8 +65,6 @@ def test_get_matching_items_sql_injection_protection(app: Flask) -> None:
 @pytest.mark.unit
 def test_get_matching_items_wildcard(app: Flask, sample_grocery: None) -> None:
     """Test wildcard search."""
-    from inventoryApp import get_matching_items
-
     with app.app_context():
         result = get_matching_items("description", "Test*")
         items = list(result)
@@ -89,8 +79,6 @@ def test_report_exception(app: Flask, capsys: Any) -> None:
     1. Detailed errors are logged server-side (stdout)
     2. Generic errors are shown to users (no internal details)
     """
-    from inventoryApp import report_exception
-
     with app.app_context():
         errors: list[str] = []
         ex = ValueError("Test error")
@@ -110,9 +98,6 @@ def test_report_exception(app: Flask, capsys: Any) -> None:
 @pytest.mark.unit
 def test_add_item_new(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test adding a new item."""
-    from inventoryApp import add_item
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         errors: list[str] = []
@@ -127,9 +112,6 @@ def test_add_item_new(app: Flask, sample_grocery_data: GroceryData) -> None:
 @pytest.mark.unit
 def test_add_item_duplicate(app: Flask, sample_grocery: None, sample_grocery_data: GroceryData) -> None:
     """Test adding a duplicate item."""
-    from inventoryApp import add_item
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         errors: list[str] = []

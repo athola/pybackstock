@@ -1,4 +1,4 @@
-# InventoryApp
+# Backstock
 Python application which searches for and updates inventory items in a database
 
 ## Technology Stack
@@ -53,14 +53,14 @@ python manage.py runserver
 
 Or using gunicorn (production-like):
 ```bash
-gunicorn inventoryApp:inventoryApp
+gunicorn "src.backstock.app:app"
 ```
 
 The app will run on http://127.0.0.1:5000/
 
 ## Interactive Demo
 
-Experience the Inventory App's functionality with the built-in interactive demo powered by Playwright:
+Experience the Backstock App's functionality with the built-in interactive demo powered by Playwright:
 
 ```bash
 make demo
@@ -100,10 +100,10 @@ uv run python demo/demo.py --headless --speed fast --screenshots
 
 ### What You'll See
 
-![Inventory App Interface](demo_interface_mockup.svg)
+![Backstock App Interface](demo_interface_mockup.svg)
 *Interactive demo showing the search functionality with sample inventory results. The interface features a clean Bootstrap design with menu buttons for CSV upload, adding items, and searching. The search view displays a dropdown for criteria selection and shows formatted results with complete item details including ID, description, pricing, and inventory metadata.*
 
-The Inventory Application features a clean Bootstrap-based interface with:
+The Backstock Application features a clean Bootstrap-based interface with:
 
 1. **Main Menu** - Three primary action buttons:
    - Add .csv (CSV file upload)

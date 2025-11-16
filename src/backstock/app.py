@@ -1,4 +1,4 @@
-"""Flask inventory management application."""
+"""Flask backstock inventory management application."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import io
 import json
 import os
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from flask import Flask, render_template, request
@@ -19,8 +20,10 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Query
     from werkzeug.datastructures import FileStorage
 
-app = Flask(__name__)
-app.config.from_object(os.environ.get("APP_SETTINGS", "config.DevelopmentConfig"))
+# Get the root directory (project root, not src/backstock)
+_root_dir = Path(__file__).parent.parent.parent
+app = Flask(__name__, template_folder=str(_root_dir / "templates"))
+app.config.from_object(os.environ.get("APP_SETTINGS", "src.backstock.config.DevelopmentConfig"))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize security extensions
@@ -43,7 +46,7 @@ talisman = Talisman(
 db = SQLAlchemy(app)
 
 # Import models after db is created to avoid circular import
-from models import Grocery  # noqa: E402
+from src.backstock.models import Grocery  # noqa: E402
 
 
 class FormAction:

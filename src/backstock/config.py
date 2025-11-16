@@ -1,4 +1,4 @@
-"""Application configuration classes for different environments."""
+"""Backstock application configuration classes for different environments."""
 
 import os
 import secrets

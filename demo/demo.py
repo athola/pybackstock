@@ -1,6 +1,6 @@
-"""Interactive demo of the Inventory App using Playwright.
+"""Interactive demo of the Backstock App using Playwright.
 
-This script demonstrates the core features of the inventory management application
+This script demonstrates the core features of the backstock inventory management application
 by automating browser interactions with Playwright.
 
 Enhanced with:
@@ -92,7 +92,7 @@ def parse_arguments(args: list[str] | None = None) -> argparse.Namespace:
     Returns:
         Parsed arguments namespace.
     """
-    parser = argparse.ArgumentParser(description="Run interactive demo of the Inventory App")
+    parser = argparse.ArgumentParser(description="Run interactive demo of the Backstock App")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
     parser.add_argument(
         "--speed", choices=["slow", "normal", "fast"], default="normal", help="Demo speed (default: normal)"
@@ -283,7 +283,7 @@ class DemoRunner:
             env={
                 **subprocess.os.environ,  # type: ignore[attr-defined]
                 "DATABASE_URL": "sqlite:///demo.db",
-                "APP_SETTINGS": "config.DevelopmentConfig",
+                "APP_SETTINGS": "src.backstock.config.DevelopmentConfig",
             },
         )
 

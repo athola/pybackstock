@@ -1,7 +1,6 @@
 """Integration tests for Flask routes."""
 
 import io
-from datetime import date
 
 import pytest
 from flask.testing import FlaskClient

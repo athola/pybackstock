@@ -1,11 +1,19 @@
-"""Shared test fixtures for the inventory application tests."""
+"""Shared test fixtures for the backstock application tests."""
 
 import os
+
+# Set test environment BEFORE importing app modules
+os.environ["APP_SETTINGS"] = "src.backstock.config.TestingConfig"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from datetime import date
 from typing import TypedDict
 
 import pytest
 from flask import Flask
+
+from src.backstock import Grocery, db
+from src.backstock import app as flask_app
 
 
 class GroceryData(TypedDict):
@@ -22,11 +30,6 @@ class GroceryData(TypedDict):
     cost: str
 
 
-# Set test environment before importing app
-os.environ["APP_SETTINGS"] = "config.TestingConfig"
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-
-
 @pytest.fixture()
 def app() -> Flask:  # type: ignore[misc]
     """Create and configure a test Flask application.
@@ -34,9 +37,7 @@ def app() -> Flask:  # type: ignore[misc]
     Returns:
         Configured Flask test application.
     """
-    from inventoryApp import app, db
-
-    app.config.update(
+    flask_app.config.update(
         {
             "TESTING": True,
             "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
@@ -44,9 +45,9 @@ def app() -> Flask:  # type: ignore[misc]
         }
     )
 
-    with app.app_context():
+    with flask_app.app_context():
         db.create_all()
-        yield app
+        yield flask_app
         db.session.remove()
         db.drop_all()
 
@@ -105,9 +106,6 @@ def sample_grocery(app: Flask, sample_grocery_data: GroceryData) -> None:
         app: The Flask application fixture.
         sample_grocery_data: Sample grocery data fixture.
     """
-    from inventoryApp import db
-    from models import Grocery
-
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
         db.session.add(grocery)
