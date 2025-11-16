@@ -209,11 +209,10 @@ class TestInputValidation:
 
     def test_no_misleading_sql_injection_check(self) -> None:
         """Test that code doesn't contain ineffective SQL injection checks."""
-        from pathlib import Path
-        import sys
-
         # Import the app module (not the app instance from __init__)
         import importlib.util
+        import sys
+        from pathlib import Path
 
         app_module_path = Path("src/backstock/app.py").resolve()
         spec = importlib.util.spec_from_file_location("src.backstock.app", app_module_path)

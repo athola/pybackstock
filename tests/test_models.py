@@ -68,7 +68,7 @@ def test_grocery_model_none_last_sold(app: Flask) -> None:
 @pytest.mark.unit
 def test_grocery_model_save_to_db(app: Flask, sample_grocery_data: GroceryData) -> None:
     """Test saving Grocery model to database."""
-    from src.backstock import db, Grocery
+    from src.backstock import Grocery, db
 
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)

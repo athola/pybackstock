@@ -105,7 +105,7 @@ def sample_grocery(app: Flask, sample_grocery_data: GroceryData) -> None:
         app: The Flask application fixture.
         sample_grocery_data: Sample grocery data fixture.
     """
-    from src.backstock import db, Grocery
+    from src.backstock import Grocery, db
 
     with app.app_context():
         grocery = Grocery(**sample_grocery_data)
