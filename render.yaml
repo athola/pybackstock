@@ -23,7 +23,7 @@ services:
           property: connectionString
     healthCheckPath: /
     autoDeploy: true
-    branch: main
+    branch: master
 
 databases:
   # PostgreSQL Database - Free Tier (1GB, 90-day expiration)
