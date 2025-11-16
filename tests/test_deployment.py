@@ -688,3 +688,42 @@ def test_app_starts_with_postgresql_database_url() -> None:
             del sys.modules["src.pybackstock.config"]
         if "src.pybackstock.app" in sys.modules:
             del sys.modules["src.pybackstock.app"]
+
+
+@pytest.mark.integration
+def test_render_yaml_predeploy_command_configured() -> None:
+    """Test that preDeployCommand is configured to run database migrations.
+
+    This is the industry-standard approach for running migrations on Render.
+    The preDeployCommand runs after the build completes but before the app starts,
+    ensuring migrations are applied exactly once per deployment, preventing race
+    conditions when scaling to multiple instances.
+    """
+    render_yaml_path = Path(__file__).parent.parent / "render.yaml"
+    with open(render_yaml_path) as f:
+        config = yaml.safe_load(f)
+
+    services = config.get("services", [])
+    web_service = next((s for s in services if s.get("type") == "web"), None)
+
+    assert web_service is not None, "No web service found in render.yaml"
+
+    # Verify preDeployCommand exists
+    pre_deploy_command = web_service.get("preDeployCommand")
+    assert pre_deploy_command is not None, (
+        "preDeployCommand is missing in render.yaml. Without this, database migrations "
+        "will not run during deployment, causing the app to show 'Not found' errors when "
+        "routes try to access non-existent database tables."
+    )
+
+    # Verify it runs database migrations
+    assert "flask db upgrade" in pre_deploy_command or "alembic upgrade head" in pre_deploy_command, (
+        "preDeployCommand should run database migrations using 'flask db upgrade' or 'alembic upgrade head'. "
+        f"Current command: {pre_deploy_command}"
+    )
+
+    # Verify it uses uv run (consistent with startCommand)
+    assert "uv run" in pre_deploy_command, (
+        "preDeployCommand should use 'uv run' to execute flask command in the correct environment, "
+        f"matching the pattern used in startCommand. Current command: {pre_deploy_command}"
+    )

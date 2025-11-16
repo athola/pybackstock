@@ -9,6 +9,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install uv && uv sync --frozen"
+    preDeployCommand: "uv run flask db upgrade"
     startCommand: "uv run gunicorn 'src.pybackstock.app:app' --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
