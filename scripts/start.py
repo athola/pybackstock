@@ -100,6 +100,8 @@ os.execvp(
     [
         "gunicorn",
         "src.pybackstock.app:app",
+        "--pythonpath",
+        str(project_root),  # Add project root to Python path for module resolution
         "--bind",
         f"0.0.0.0:{port}",
         "--forwarded-allow-ips",

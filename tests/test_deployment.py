@@ -848,3 +848,130 @@ def test_render_yaml_migrations_configured() -> None:
         assert has_migration_logic, (
             "Startup script must contain migration logic (flask_migrate_upgrade, flask db upgrade, or alembic upgrade)"
         )
+
+
+@pytest.mark.integration
+def test_gunicorn_pythonpath_configured() -> None:
+    """Test that Gunicorn is configured with --pythonpath parameter.
+
+    This is critical for Render deployment. When os.execvp() replaces the process
+    with gunicorn, runtime sys.path modifications are lost. The --pythonpath parameter
+    ensures gunicorn can find the 'src' package by adding the project root to Python's
+    module search path.
+
+    Without this, gunicorn cannot import 'src.pybackstock.app:app', resulting in
+    the generic "Not found" page instead of the Flask application.
+    """
+    render_yaml_path = Path(__file__).parent.parent / "render.yaml"
+    with open(render_yaml_path) as f:
+        config = yaml.safe_load(f)
+
+    services = config.get("services", [])
+    web_service = next((s for s in services if s.get("type") == "web"), None)
+
+    assert web_service is not None, "No web service found in render.yaml"
+
+    start_command = web_service.get("startCommand", "")
+
+    # If using a startup script, check the script instead
+    if "scripts/start.py" in start_command:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        with open(startup_script_path) as f:
+            command_to_check = f.read()
+    else:
+        command_to_check = start_command
+
+    # Verify --pythonpath flag is present
+    assert "--pythonpath" in command_to_check, (
+        "Gunicorn must be configured with --pythonpath parameter. "
+        "Without this, gunicorn cannot find the 'src' package after os.execvp() replaces the process, "
+        "causing 'Not found' errors instead of serving the Flask application."
+    )
+
+
+@pytest.mark.integration
+def test_gunicorn_can_import_app_with_pythonpath() -> None:
+    """Test that Gunicorn can import the Flask app when using --pythonpath.
+
+    This simulates what happens when Gunicorn starts with the --pythonpath parameter,
+    ensuring the project root is in sys.path for module resolution.
+    """
+    project_root = Path(__file__).parent.parent
+
+    # Simulate gunicorn's environment with --pythonpath
+    try:
+        result = subprocess.run(
+            [
+                "uv",
+                "run",
+                "gunicorn",
+                "src.pybackstock.app:app",
+                "--pythonpath",
+                str(project_root),
+                "--bind",
+                "127.0.0.1:9998",
+                "--timeout",
+                "1",
+                "--preload",  # Load app before forking to catch import errors
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            cwd=str(project_root),
+        )
+
+        # Check that Gunicorn didn't fail with module import errors
+        assert "ModuleNotFoundError: No module named 'src'" not in result.stderr, (
+            "Gunicorn failed to import 'src' package. "
+            "The --pythonpath parameter should add project root to sys.path."
+        )
+        assert "Failed to find application object 'app'" not in result.stderr, (
+            "Gunicorn failed to find Flask app object. "
+            "Check that src.pybackstock.app:app is correctly defined."
+        )
+        assert "Exception in worker process" not in result.stderr or "ImportError" not in result.stderr, (
+            "Gunicorn worker failed with import error. "
+            "Verify --pythonpath is correctly configured."
+        )
+    except subprocess.TimeoutExpired:
+        # Timeout is acceptable - we just want to verify it starts without import errors
+        pass
+    except FileNotFoundError:
+        pytest.skip("uv command not available in test environment")
+
+
+@pytest.mark.integration
+def test_startup_script_preserves_project_root_for_gunicorn() -> None:
+    """Test that the startup script passes project_root to gunicorn via --pythonpath.
+
+    This verifies the fix for the "Not found" issue where gunicorn couldn't
+    find the application module after os.execvp() replaced the process.
+    """
+    project_root = Path(__file__).parent.parent
+    startup_script_path = project_root / "scripts" / "start.py"
+
+    assert startup_script_path.exists(), "Startup script not found"
+
+    with open(startup_script_path) as f:
+        script_content = f.read()
+
+    # Verify project_root is defined
+    assert "project_root" in script_content, (
+        "Startup script must define project_root variable"
+    )
+
+    # Verify project_root is used with --pythonpath
+    pythonpath_with_project_root = (
+        '"--pythonpath"' in script_content
+        and "str(project_root)" in script_content
+    ) or (
+        "'--pythonpath'" in script_content
+        and "str(project_root)" in script_content
+    )
+
+    assert pythonpath_with_project_root, (
+        "Startup script must pass str(project_root) to gunicorn's --pythonpath parameter. "
+        "This ensures gunicorn can import the application module after os.execvp() replaces the process."
+    )
