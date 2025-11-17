@@ -15,6 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import func
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query
@@ -25,6 +26,16 @@ _root_dir = Path(__file__).parent.parent.parent
 app = Flask(__name__, template_folder=str(_root_dir / "templates"))
 app.config.from_object(os.environ.get("APP_SETTINGS", "src.pybackstock.config.DevelopmentConfig"))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Configure app to trust Render.com's proxy headers (X-Forwarded-*)
+# This is required for Flask-Talisman to correctly detect HTTPS behind Render's reverse proxy
+app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+    app.wsgi_app,
+    x_for=1,  # Trust X-Forwarded-For from 1 proxy
+    x_proto=1,  # Trust X-Forwarded-Proto from 1 proxy (critical for HTTPS detection)
+    x_host=1,  # Trust X-Forwarded-Host from 1 proxy
+    x_prefix=1,  # Trust X-Forwarded-Prefix from 1 proxy
+)
 
 # Initialize security extensions
 csrf = CSRFProtect(app)

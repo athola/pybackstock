@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 import pytest
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from src.pybackstock import app as flask_app
 
@@ -261,3 +263,104 @@ class TestSessionSecurity:
         """Test that session cookies have SameSite attribute."""
         samesite = app.config.get("SESSION_COOKIE_SAMESITE")
         assert samesite in ("Lax", "Strict", None)
+
+
+class TestProxyConfiguration:
+    """Test ProxyFix middleware configuration for reverse proxy support."""
+
+    def test_proxyfix_middleware_configured(self) -> None:
+        """Test that ProxyFix middleware is configured on the Flask app.
+
+        This is critical for deployment on platforms like Render.com that use
+        reverse proxies with SSL termination. Without ProxyFix, Flask-Talisman
+        cannot detect HTTPS connections and causes redirect loops or 404 errors.
+        """
+        # Check that the app has ProxyFix middleware applied
+        assert hasattr(flask_app, "wsgi_app"), "Flask app should have wsgi_app attribute"
+        assert isinstance(flask_app.wsgi_app, ProxyFix), (
+            "Flask app should have ProxyFix middleware configured. "
+            "Without this, the app won't work correctly behind Render's reverse proxy."
+        )
+
+    def test_proxyfix_x_proto_configured(self) -> None:
+        """Test that ProxyFix is configured to trust X-Forwarded-Proto header.
+
+        The X-Forwarded-Proto header is essential for Flask to detect HTTPS
+        connections when SSL is terminated at the load balancer (as on Render.com).
+        """
+        proxy_fix = flask_app.wsgi_app
+        assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
+
+        # ProxyFix stores configuration in x_proto attribute
+        assert proxy_fix.x_proto > 0, (
+            "ProxyFix x_proto must be > 0 to trust X-Forwarded-Proto header. "
+            "Without this, Flask-Talisman will not detect HTTPS and will cause errors."
+        )
+
+    def test_proxyfix_x_for_configured(self) -> None:
+        """Test that ProxyFix is configured to trust X-Forwarded-For header."""
+        proxy_fix = flask_app.wsgi_app
+        assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
+        assert proxy_fix.x_for > 0, "ProxyFix x_for must be > 0 to trust X-Forwarded-For header"
+
+    def test_proxyfix_x_host_configured(self) -> None:
+        """Test that ProxyFix is configured to trust X-Forwarded-Host header."""
+        proxy_fix = flask_app.wsgi_app
+        assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
+        assert proxy_fix.x_host > 0, "ProxyFix x_host must be > 0 to trust X-Forwarded-Host header"
+
+    def test_https_detection_with_x_forwarded_proto(self, client: Any) -> None:
+        """Test that Flask correctly detects HTTPS when X-Forwarded-Proto is set.
+
+        This simulates how Render.com sends requests: HTTP to the app with
+        X-Forwarded-Proto: https to indicate the original request was HTTPS.
+        """
+        # Make a request with X-Forwarded-Proto header (simulating Render's proxy)
+        response = client.get("/", headers={"X-Forwarded-Proto": "https"})
+
+        # The request should succeed (not redirect)
+        assert response.status_code == 200, (
+            "Request with X-Forwarded-Proto: https should succeed without redirect. "
+            "If this fails, ProxyFix or Talisman may not be configured correctly."
+        )
+
+    def test_proxyfix_configured_before_talisman(self) -> None:
+        """Test that ProxyFix is configured before Talisman initialization.
+
+        ProxyFix MUST be applied before Talisman, otherwise Talisman won't
+        recognize HTTPS connections and will cause redirect loops.
+        """
+        # Verify ProxyFix is the outermost middleware
+        assert isinstance(flask_app.wsgi_app, ProxyFix), (
+            "ProxyFix must be configured as the outermost WSGI middleware. "
+            "It must be applied BEFORE Talisman initialization."
+        )
+
+    def test_app_module_has_proxyfix_import(self) -> None:
+        """Test that the app module imports ProxyFix from werkzeug.middleware.proxy_fix."""
+        app_module_path = Path("src/pybackstock/app.py").resolve()
+        code = app_module_path.read_text()
+
+        assert "from werkzeug.middleware.proxy_fix import ProxyFix" in code, (
+            "app.py should import ProxyFix from werkzeug.middleware.proxy_fix"
+        )
+
+    def test_app_module_configures_proxyfix_before_talisman(self) -> None:
+        """Test that app.py configures ProxyFix before initializing Talisman.
+
+        The order matters: ProxyFix must be applied to app.wsgi_app before
+        Talisman is initialized, so Talisman sees the corrected scheme.
+        """
+        app_module_path = Path("src/pybackstock/app.py").resolve()
+        code = app_module_path.read_text()
+
+        # Find positions of ProxyFix and Talisman initialization
+        proxyfix_pos = code.find("ProxyFix(")
+        talisman_pos = code.find("Talisman(")
+
+        assert proxyfix_pos > 0, "ProxyFix configuration not found in app.py"
+        assert talisman_pos > 0, "Talisman configuration not found in app.py"
+        assert proxyfix_pos < talisman_pos, (
+            "ProxyFix must be configured BEFORE Talisman in app.py. "
+            "Current order will cause Talisman to not recognize HTTPS connections."
+        )

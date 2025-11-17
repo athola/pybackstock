@@ -252,6 +252,56 @@ def test_gunicorn_syntax() -> None:
 
 
 @pytest.mark.integration
+def test_gunicorn_forwarded_allow_ips_configured() -> None:
+    """Test that Gunicorn is configured with --forwarded-allow-ips flag.
+
+    This is critical for Render.com deployment. Without this flag, Gunicorn won't
+    trust the X-Forwarded-* headers from Render's proxy, causing Flask-Talisman
+    to fail to detect HTTPS connections, resulting in redirect loops or 404 errors.
+    """
+    render_yaml_path = Path(__file__).parent.parent / "render.yaml"
+    with open(render_yaml_path) as f:
+        config = yaml.safe_load(f)
+
+    services = config.get("services", [])
+    web_service = next((s for s in services if s.get("type") == "web"), None)
+
+    assert web_service is not None, "No web service found in render.yaml"
+
+    start_command = web_service.get("startCommand", "")
+
+    # If using a startup script, check the script instead
+    if "scripts/start.py" in start_command:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        with open(startup_script_path) as f:
+            command_to_check = f.read()
+    else:
+        command_to_check = start_command
+
+    # Verify --forwarded-allow-ips flag is present
+    assert "--forwarded-allow-ips" in command_to_check, (
+        "Gunicorn must be configured with --forwarded-allow-ips flag. "
+        "Without this, Gunicorn won't trust X-Forwarded-* headers from Render's proxy, "
+        "causing Flask-Talisman to fail to detect HTTPS connections."
+    )
+
+    # Verify it's set to "*" (trust all IPs) which is safe on Render
+    # since Render controls access to the app
+    forwarded_allow_ips_configured = (
+        '--forwarded-allow-ips "*"' in command_to_check
+        or "--forwarded-allow-ips '*'" in command_to_check
+        or '"*",' in command_to_check  # For Python list syntax: ["--forwarded-allow-ips", "*"]
+        or "'*'," in command_to_check  # For Python list syntax with single quotes
+    )
+
+    assert forwarded_allow_ips_configured, (
+        "Gunicorn --forwarded-allow-ips should be set to '*' for Render.com deployment. "
+        "This tells Gunicorn to trust forwarded headers from Render's infrastructure."
+    )
+
+
+@pytest.mark.integration
 def test_render_runtime_python() -> None:
     """Test that Python runtime is correctly configured."""
     render_yaml_path = Path(__file__).parent.parent / "render.yaml"
