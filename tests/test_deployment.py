@@ -743,9 +743,8 @@ def test_render_yaml_migrations_configured() -> None:
     start_command = web_service.get("startCommand", "")
 
     # Check if migrations run in preDeployCommand
-    migrations_in_predeploy = (
-        pre_deploy_command is not None
-        and ("flask db upgrade" in pre_deploy_command or "alembic upgrade head" in pre_deploy_command)
+    migrations_in_predeploy = pre_deploy_command is not None and (
+        "flask db upgrade" in pre_deploy_command or "alembic upgrade head" in pre_deploy_command
     )
 
     # Check if using startup script
