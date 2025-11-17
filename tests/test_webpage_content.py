@@ -15,7 +15,7 @@ def test_webpage_title_and_header(client: FlaskClient) -> None:
     assert response.status_code == 200
 
     data = response.data.decode("utf-8")
-    assert "<title>Backstock</title>" in data
+    assert "<title>Backstock Inventory</title>" in data
     assert "Backstock Inventory Application" in data
 
 
@@ -40,7 +40,7 @@ def test_webpage_has_csv_upload_form(client: FlaskClient) -> None:
     assert response.status_code == 200
 
     data = response.data.decode("utf-8")
-    assert "Add .csv:" in data
+    assert "Add .csv File:" in data
     assert 'name="csv-input"' in data
     assert 'type="file"' in data
 
@@ -186,7 +186,7 @@ def test_page_structure_is_valid_html(client: FlaskClient) -> None:
     data = response.data.decode("utf-8")
     # Check for basic HTML structure
     assert "<!DOCTYPE html>" in data
-    assert "<html>" in data
+    assert '<html lang="en">' in data
     assert "</html>" in data
     assert "<head>" in data
     assert "</head>" in data
