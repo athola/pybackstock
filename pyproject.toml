@@ -120,7 +120,7 @@ ignore = [
 # Demo files
 "demo/*" = ["T201", "S603", "S607", "PLR2004", "D103", "ANN401", "DTZ005", "FBT001", "FBT002", "TRY300", "BLE001"]
 # Scripts - utility scripts that need print, subprocess, etc.
-"scripts/*" = ["T201", "S603", "S607", "D", "ANN", "PTH123", "F841", "BLE001", "FURB105", "UP017", "INP001"]
+"scripts/*" = ["T201", "S603", "S606", "S607", "D", "ANN", "PTH123", "F841", "BLE001", "FURB105", "UP017", "INP001"]
 # Migrations
 "migrations/*" = ["D", "ANN", "INP001"]
 # Source code

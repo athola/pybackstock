@@ -53,13 +53,31 @@ def test_gunicorn_binding_configuration() -> None:
     start_command = web_service.get("startCommand", "")
     assert start_command, "startCommand is missing in render.yaml web service"
 
+    # If using a startup script, check the script instead
+    if "scripts/start.py" in start_command:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        with open(startup_script_path) as f:
+            script_content = f.read()
+        command_to_check = script_content
+    else:
+        command_to_check = start_command
+
     # Verify Gunicorn is being used
-    assert "gunicorn" in start_command, "startCommand does not use Gunicorn"
+    assert "gunicorn" in command_to_check, "startCommand/script does not use Gunicorn"
 
     # Verify correct binding to all interfaces (0.0.0.0) and PORT env var
-    assert "--bind" in start_command, "Gunicorn startCommand missing --bind flag"
-    assert "0.0.0.0" in start_command, "Gunicorn not binding to 0.0.0.0 (all interfaces)"
-    assert "$PORT" in start_command or "${PORT}" in start_command, "Gunicorn not using $PORT environment variable"
+    assert "--bind" in command_to_check, "Gunicorn missing --bind flag"
+    assert "0.0.0.0" in command_to_check, "Gunicorn not binding to 0.0.0.0 (all interfaces)"
+    # Check for PORT variable reference (shell-style or Python-style)
+    port_referenced = (
+        "$PORT" in command_to_check
+        or "${PORT}" in command_to_check
+        or 'os.environ.get("PORT"' in command_to_check
+        or "os.environ.get('PORT'" in command_to_check
+        or 'os.environ["PORT"]' in command_to_check
+    )
+    assert port_referenced, "Gunicorn not using PORT environment variable"
 
 
 @pytest.mark.integration
@@ -76,9 +94,18 @@ def test_gunicorn_app_path() -> None:
 
     start_command = web_service.get("startCommand", "")
 
+    # If using a startup script, check the script instead
+    if "scripts/start.py" in start_command:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        with open(startup_script_path) as f:
+            command_to_check = f.read()
+    else:
+        command_to_check = start_command
+
     # Verify the correct app module path
-    assert "src.pybackstock.app:app" in start_command, (
-        "Gunicorn startCommand does not reference correct app path 'src.pybackstock.app:app'"
+    assert "src.pybackstock.app:app" in command_to_check, (
+        "Gunicorn does not reference correct app path 'src.pybackstock.app:app'"
     )
 
 
@@ -174,9 +201,18 @@ def test_gunicorn_syntax() -> None:
 
     start_command = web_service.get("startCommand", "")
 
+    # If using a startup script, check the script instead
+    if "scripts/start.py" in start_command:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        with open(startup_script_path) as f:
+            command_to_check = f.read()
+    else:
+        command_to_check = start_command
+
     # Test that gunicorn command can be validated
     # The command should follow pattern: gunicorn 'module:app' --bind host:port
-    parts = start_command.split()
+    parts = command_to_check.split()
 
     # Find gunicorn in the command
     gunicorn_idx = None
@@ -185,7 +221,7 @@ def test_gunicorn_syntax() -> None:
             gunicorn_idx = i
             break
 
-    assert gunicorn_idx is not None, "gunicorn not found in startCommand"
+    assert gunicorn_idx is not None, "gunicorn not found in startCommand or script"
 
     # Verify app path comes after gunicorn (before --bind)
     app_path_found = False
@@ -204,7 +240,15 @@ def test_gunicorn_syntax() -> None:
     if bind_idx is not None and bind_idx + 1 < len(parts):
         bind_address = parts[bind_idx + 1]
         assert "0.0.0.0" in bind_address, "Bind address should include 0.0.0.0"
-        assert "$PORT" in bind_address or "${PORT}" in bind_address, "Bind address should include $PORT variable"
+        # For Python scripts, check if PORT is referenced anywhere in the script
+        # For shell commands, check if $PORT is in the bind address
+        port_in_bind = "$PORT" in bind_address or "${PORT}" in bind_address
+        port_in_script = (
+            'os.environ.get("PORT"' in command_to_check
+            or "os.environ.get('PORT'" in command_to_check
+            or 'os.environ["PORT"]' in command_to_check
+        )
+        assert port_in_bind or port_in_script, "Bind address/script should reference PORT environment variable"
 
 
 @pytest.mark.integration
@@ -691,13 +735,16 @@ def test_app_starts_with_postgresql_database_url() -> None:
 
 
 @pytest.mark.integration
-def test_render_yaml_predeploy_command_configured() -> None:
-    """Test that preDeployCommand is configured to run database migrations.
+def test_render_yaml_migrations_configured() -> None:
+    """Test that database migrations are configured to run during deployment.
 
-    This is the industry-standard approach for running migrations on Render.
-    The preDeployCommand runs after the build completes but before the app starts,
-    ensuring migrations are applied exactly once per deployment, preventing race
-    conditions when scaling to multiple instances.
+    On Render free tier, preDeployCommand is not available (paid-only feature).
+    As a workaround, migrations must run via a startup script or in startCommand.
+
+    This test validates that migrations are configured via:
+    - preDeployCommand (paid tier - industry standard)
+    - Startup script (free tier - recommended workaround)
+    - Inline startCommand (free tier - simple workaround)
     """
     render_yaml_path = Path(__file__).parent.parent / "render.yaml"
     with open(render_yaml_path) as f:
@@ -708,22 +755,46 @@ def test_render_yaml_predeploy_command_configured() -> None:
 
     assert web_service is not None, "No web service found in render.yaml"
 
-    # Verify preDeployCommand exists
     pre_deploy_command = web_service.get("preDeployCommand")
-    assert pre_deploy_command is not None, (
-        "preDeployCommand is missing in render.yaml. Without this, database migrations "
-        "will not run during deployment, causing the app to show 'Not found' errors when "
-        "routes try to access non-existent database tables."
+    start_command = web_service.get("startCommand", "")
+
+    # Check if migrations run in preDeployCommand
+    migrations_in_predeploy = pre_deploy_command is not None and (
+        "flask db upgrade" in pre_deploy_command or "alembic upgrade head" in pre_deploy_command
     )
 
-    # Verify it runs database migrations
-    assert "flask db upgrade" in pre_deploy_command or "alembic upgrade head" in pre_deploy_command, (
-        "preDeployCommand should run database migrations using 'flask db upgrade' or 'alembic upgrade head'. "
-        f"Current command: {pre_deploy_command}"
+    # Check if using startup script
+    uses_startup_script = "scripts/start.py" in start_command
+
+    # Check if migrations run inline in startCommand
+    migrations_inline = "flask db upgrade" in start_command or "alembic upgrade head" in start_command
+
+    # At least one migration method must be configured
+    migration_configured = migrations_in_predeploy or uses_startup_script or migrations_inline
+
+    assert migration_configured, (
+        "Database migrations are not configured to run during deployment. "
+        "Without migrations, database tables won't exist, causing 'Not found' errors. "
+        "Configure migrations via preDeployCommand (paid tier) or a startup script (free tier). "
+        f"preDeployCommand: {pre_deploy_command}, startCommand: {start_command}"
     )
 
-    # Verify it uses uv run (consistent with startCommand)
-    assert "uv run" in pre_deploy_command, (
-        "preDeployCommand should use 'uv run' to execute flask command in the correct environment, "
-        f"matching the pattern used in startCommand. Current command: {pre_deploy_command}"
-    )
+    # If using startup script, verify it exists and contains migration logic
+    if uses_startup_script:
+        project_root = Path(__file__).parent.parent
+        startup_script_path = project_root / "scripts" / "start.py"
+        assert startup_script_path.exists(), (
+            f"Startup script not found at {startup_script_path}. "
+            "Create scripts/start.py to run migrations before starting the app."
+        )
+        # Verify script contains migration logic
+        with open(startup_script_path) as f:
+            script_content = f.read()
+        has_migration_logic = (
+            "flask_migrate_upgrade" in script_content
+            or "flask db upgrade" in script_content
+            or "alembic upgrade" in script_content
+        )
+        assert has_migration_logic, (
+            "Startup script must contain migration logic (flask_migrate_upgrade, flask db upgrade, or alembic upgrade)"
+        )

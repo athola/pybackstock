@@ -9,8 +9,9 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install uv && uv sync --frozen"
-    preDeployCommand: "uv run flask db upgrade"
-    startCommand: "uv run gunicorn 'src.pybackstock.app:app' --bind 0.0.0.0:$PORT"
+    # Note: preDeployCommand is not available on free tier
+    # Using startup script to run migrations before gunicorn starts
+    startCommand: "python scripts/start.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.14
