@@ -42,5 +42,12 @@ print("=" * 50)
 port = os.environ.get("PORT", "10000")
 os.execvp(
     "gunicorn",
-    ["gunicorn", "src.pybackstock.app:app", "--bind", f"0.0.0.0:{port}"],
+    [
+        "gunicorn",
+        "src.pybackstock.app:app",
+        "--bind",
+        f"0.0.0.0:{port}",
+        "--forwarded-allow-ips",
+        "*",  # Trust forwarded headers from Render's proxy
+    ],
 )
