@@ -29,7 +29,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Configure app to trust Render.com's proxy headers (X-Forwarded-*)
 # This is required for Flask-Talisman to correctly detect HTTPS behind Render's reverse proxy
-app.wsgi_app = ProxyFix(
+app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
     app.wsgi_app,
     x_for=1,  # Trust X-Forwarded-For from 1 proxy
     x_proto=1,  # Trust X-Forwarded-Proto from 1 proxy (critical for HTTPS detection)

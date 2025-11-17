@@ -273,7 +273,7 @@ class TestProxyConfiguration:
         reverse proxies with SSL termination. Without ProxyFix, Flask-Talisman
         cannot detect HTTPS connections and causes redirect loops or 404 errors.
         """
-        from werkzeug.middleware.proxy_fix import ProxyFix
+        from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: PLC0415
 
         # Check that the app has ProxyFix middleware applied
         assert hasattr(flask_app, "wsgi_app"), "Flask app should have wsgi_app attribute"
@@ -288,7 +288,7 @@ class TestProxyConfiguration:
         The X-Forwarded-Proto header is essential for Flask to detect HTTPS
         connections when SSL is terminated at the load balancer (as on Render.com).
         """
-        from werkzeug.middleware.proxy_fix import ProxyFix
+        from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: PLC0415
 
         proxy_fix = flask_app.wsgi_app
         assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
@@ -301,7 +301,7 @@ class TestProxyConfiguration:
 
     def test_proxyfix_x_for_configured(self) -> None:
         """Test that ProxyFix is configured to trust X-Forwarded-For header."""
-        from werkzeug.middleware.proxy_fix import ProxyFix
+        from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: PLC0415
 
         proxy_fix = flask_app.wsgi_app
         assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
@@ -309,7 +309,7 @@ class TestProxyConfiguration:
 
     def test_proxyfix_x_host_configured(self) -> None:
         """Test that ProxyFix is configured to trust X-Forwarded-Host header."""
-        from werkzeug.middleware.proxy_fix import ProxyFix
+        from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: PLC0415
 
         proxy_fix = flask_app.wsgi_app
         assert isinstance(proxy_fix, ProxyFix), "ProxyFix middleware should be configured"
@@ -336,7 +336,7 @@ class TestProxyConfiguration:
         ProxyFix MUST be applied before Talisman, otherwise Talisman won't
         recognize HTTPS connections and will cause redirect loops.
         """
-        from werkzeug.middleware.proxy_fix import ProxyFix
+        from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: PLC0415
 
         # Verify ProxyFix is the outermost middleware
         assert isinstance(flask_app.wsgi_app, ProxyFix), (
@@ -346,7 +346,7 @@ class TestProxyConfiguration:
 
     def test_app_module_has_proxyfix_import(self) -> None:
         """Test that the app module imports ProxyFix from werkzeug.middleware.proxy_fix."""
-        from pathlib import Path
+        from pathlib import Path  # noqa: PLC0415
 
         app_module_path = Path("src/pybackstock/app.py").resolve()
         code = app_module_path.read_text()
@@ -361,7 +361,7 @@ class TestProxyConfiguration:
         The order matters: ProxyFix must be applied to app.wsgi_app before
         Talisman is initialized, so Talisman sees the corrected scheme.
         """
-        from pathlib import Path
+        from pathlib import Path  # noqa: PLC0415
 
         app_module_path = Path("src/pybackstock/app.py").resolve()
         code = app_module_path.read_text()
