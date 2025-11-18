@@ -230,10 +230,10 @@ def test_gunicorn_syntax() -> None:
         if "--bind" in parts[i]:
             bind_idx = i
             break
-        if "src.pybackstock.app:app" in parts[i]:
+        if "src.pybackstock.connexion_app:app" in parts[i]:
             app_path_found = True
 
-    assert app_path_found, "App path 'src.pybackstock.app:app' not found after gunicorn command"
+    assert app_path_found, "App path 'src.pybackstock.connexion_app:app' not found after gunicorn command"
     assert bind_idx is not None, "--bind flag not found in gunicorn command"
 
     # Verify bind address comes after --bind flag

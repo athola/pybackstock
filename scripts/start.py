@@ -76,7 +76,7 @@ try:
     from flask_migrate import Migrate
     from flask_migrate import upgrade as flask_migrate_upgrade
 
-    from src.pybackstock import app, connexion_app, db
+    from src.pybackstock import app, db
 
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)

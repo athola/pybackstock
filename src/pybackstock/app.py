@@ -65,7 +65,10 @@ talisman = Talisman(
     },
 )
 
-# Import models (db is now initialized in connexion_app.py)
+# Initialize the shared database with this Flask app
+db.init_app(app)
+
+# Import models after db is initialized
 from src.pybackstock.models import Grocery  # noqa: E402
 
 
@@ -191,6 +194,17 @@ def handle_csv_action() -> tuple[list[str], list[Any]]:
 # The routes are now managed by Connexion via openapi.yaml
 
 
+@app.route("/health")
+def health() -> tuple[dict[str, str], int]:
+    """Health check endpoint for monitoring and deployment platforms.
+
+    Returns:
+        JSON response with status and HTTP 200 code.
+    """
+    return {"status": "healthy"}, 200
+
+
+@app.route("/", methods=["GET", "POST"])
 def index() -> str:
     """Handle the main index page for inventory management.
 
@@ -469,6 +483,7 @@ def calculate_reorder_data(items: list[Grocery]) -> dict[str, Any]:
     return {"reorder_items": reorder_items}
 
 
+@app.route("/report")
 def report() -> str:
     """Generate and display inventory analytics report.
 

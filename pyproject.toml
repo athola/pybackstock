@@ -127,6 +127,7 @@ ignore = [
 # Source code
 "src/pybackstock/app.py" = ["FBT001", "ANN401"]
 "src/pybackstock/models.py" = ["DTZ007"]
+"src/pybackstock/connexion_app.py" = ["PGH003"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -187,5 +188,7 @@ module = [
     "werkzeug.*",
     "playwright.*",
     "requests",
+    "connexion",
+    "connexion.*",
 ]
 ignore_missing_imports = true

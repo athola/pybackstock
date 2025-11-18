@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -32,7 +33,8 @@ flask_app.config.from_object(os.environ.get("APP_SETTINGS", "src.pybackstock.con
 flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Configure app to trust Render.com's proxy headers (X-Forwarded-*)
-flask_app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+# mypy: disable-error-code="unused-ignore"
+flask_app.wsgi_app = ProxyFix(  # type: ignore
     flask_app.wsgi_app,
     x_for=1,
     x_proto=1,
@@ -89,8 +91,11 @@ app_module.db = db
 app_module.csrf = csrf
 app_module.talisman = talisman
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 # Add the OpenAPI specification
-print("Loading OpenAPI specification from openapi.yaml...")
+logger.info("Loading OpenAPI specification from openapi.yaml...")
 try:
     connexion_app.add_api(
         "openapi.yaml",
@@ -98,12 +103,11 @@ try:
         pythonic_params=True,
         validate_responses=False,  # Disable for now to avoid validation issues
     )
-    print(f"✓ OpenAPI spec loaded successfully!")
-    print(f"✓ Registered routes: {[rule.rule for rule in flask_app.url_map.iter_rules()]}")
-except Exception as e:
-    print(f"✗ Error loading OpenAPI spec: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.info("OpenAPI spec loaded successfully!")
+    logger.debug("Registered routes: %s", [rule.rule for rule in flask_app.url_map.iter_rules()])
+except (FileNotFoundError, ValueError, KeyError):
+    logger.exception("Error loading OpenAPI spec")
+    raise
 
 # Export the underlying Flask app for compatibility
 app = flask_app

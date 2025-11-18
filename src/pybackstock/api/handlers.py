@@ -25,6 +25,7 @@ from src.pybackstock.app import (
     handle_search_action,
     render_index_template,
 )
+from src.pybackstock.connexion_app import flask_app
 
 
 def health_check() -> tuple[dict[str, str], int]:
@@ -100,8 +101,6 @@ def report_get() -> str:  # noqa: C901
     Returns:
         Rendered HTML template.
     """
-    from src.pybackstock.connexion_app import flask_app
-
     try:
         # Get selected visualizations from query parameters
         selected_viz = request.args.getlist("viz")
@@ -184,8 +183,6 @@ def report_data_get() -> tuple[dict[str, Any], int]:  # noqa: C901
     Returns:
         JSON response with report data or error details.
     """
-    from src.pybackstock.connexion_app import flask_app
-
     try:
         # Get selected visualizations from query parameters
         selected_viz = request.args.getlist("viz")

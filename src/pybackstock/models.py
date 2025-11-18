@@ -12,18 +12,18 @@ class Grocery(db.Model):  # type: ignore[name-defined]
 
     __tablename__ = "grocery_items"
 
-    id = db.Column(db.Integer, primary_key=True)  # type: ignore[has-type]
-    description = db.Column(db.String(60), nullable=False)  # type: ignore[has-type]
-    last_sold = db.Column(db.Date)  # type: ignore[has-type]
-    shelf_life = db.Column(db.String(5), nullable=False)  # type: ignore[has-type]
-    department = db.Column(db.String(40))  # type: ignore[has-type]
-    price = db.Column(db.String(20), nullable=False)  # type: ignore[has-type]
-    unit = db.Column(db.String(10), nullable=False)  # type: ignore[has-type]
-    x_for = db.Column(db.Integer, nullable=False)  # type: ignore[has-type]
-    cost = db.Column(db.String(20), nullable=False)  # type: ignore[has-type]
-    quantity = db.Column(db.Integer, nullable=False, default=0)  # type: ignore[has-type]
-    reorder_point = db.Column(db.Integer, nullable=False, default=10)  # type: ignore[has-type]
-    date_added = db.Column(db.Date, nullable=False, default=date.today)  # type: ignore[has-type]
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(60), nullable=False)
+    last_sold = db.Column(db.Date)
+    shelf_life = db.Column(db.String(5), nullable=False)
+    department = db.Column(db.String(40))
+    price = db.Column(db.String(20), nullable=False)
+    unit = db.Column(db.String(10), nullable=False)
+    x_for = db.Column(db.Integer, nullable=False)
+    cost = db.Column(db.String(20), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    reorder_point = db.Column(db.Integer, nullable=False, default=10)
+    date_added = db.Column(db.Date, nullable=False, default=date.today)
 
     def __init__(  # noqa: PLR0913
         self,
