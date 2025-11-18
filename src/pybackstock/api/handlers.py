@@ -100,6 +100,8 @@ def report_get() -> str:  # noqa: C901
     Returns:
         Rendered HTML template.
     """
+    from src.pybackstock.connexion_app import flask_app
+
     try:
         # Get selected visualizations from query parameters
         selected_viz = request.args.getlist("viz")
@@ -116,55 +118,56 @@ def report_get() -> str:  # noqa: C901
                 "reorder_table",
             ]
 
-        # Query all items from database
-        all_items = Grocery.query.all()
+        # Query all items from database - must be within app context
+        with flask_app.app_context():
+            all_items = Grocery.query.all()
 
-        # Always calculate summary metrics (shown in summary cards)
-        summary_data = calculate_summary_metrics(all_items)
+            # Always calculate summary metrics (shown in summary cards)
+            summary_data = calculate_summary_metrics(all_items)
 
-        # Initialize visualization data dictionary
-        viz_data: dict[str, Any] = {}
+            # Initialize visualization data dictionary
+            viz_data: dict[str, Any] = {}
 
-        # Only calculate data for selected visualizations
-        if "stock_health" in selected_viz:
-            viz_data.update(calculate_stock_health_data(all_items))
+            # Only calculate data for selected visualizations
+            if "stock_health" in selected_viz:
+                viz_data.update(calculate_stock_health_data(all_items))
 
-        if "department" in selected_viz:
-            viz_data.update(calculate_department_data(all_items))
+            if "department" in selected_viz:
+                viz_data.update(calculate_department_data(all_items))
 
-        if "age" in selected_viz:
-            viz_data.update(calculate_age_data(all_items))
+            if "age" in selected_viz:
+                viz_data.update(calculate_age_data(all_items))
 
-        if "price_range" in selected_viz:
-            viz_data.update(calculate_price_range_data(all_items))
+            if "price_range" in selected_viz:
+                viz_data.update(calculate_price_range_data(all_items))
 
-        if "shelf_life" in selected_viz:
-            viz_data.update(calculate_shelf_life_data(all_items))
+            if "shelf_life" in selected_viz:
+                viz_data.update(calculate_shelf_life_data(all_items))
 
-        if "top_value" in selected_viz:
-            viz_data.update(calculate_top_value_data(all_items))
+            if "top_value" in selected_viz:
+                viz_data.update(calculate_top_value_data(all_items))
 
-        if "top_price" in selected_viz:
-            viz_data.update(calculate_top_price_data(all_items))
+            if "top_price" in selected_viz:
+                viz_data.update(calculate_top_price_data(all_items))
 
-        if "reorder_table" in selected_viz:
-            viz_data.update(calculate_reorder_data(all_items))
+            if "reorder_table" in selected_viz:
+                viz_data.update(calculate_reorder_data(all_items))
 
-        # Merge summary data and visualization data
-        template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
+            # Merge summary data and visualization data
+            template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
 
-        # Provide empty defaults for visualizations that weren't selected
-        # This prevents template errors if a visualization references missing data
-        template_data.setdefault("stock_levels", {})
-        template_data.setdefault("dept_counts", {})
-        template_data.setdefault("age_distribution", {})
-        template_data.setdefault("price_ranges", {})
-        template_data.setdefault("shelf_life_counts", {})
-        template_data.setdefault("top_value_items", [])
-        template_data.setdefault("top_items", [])
-        template_data.setdefault("reorder_items", [])
+            # Provide empty defaults for visualizations that weren't selected
+            # This prevents template errors if a visualization references missing data
+            template_data.setdefault("stock_levels", {})
+            template_data.setdefault("dept_counts", {})
+            template_data.setdefault("age_distribution", {})
+            template_data.setdefault("price_ranges", {})
+            template_data.setdefault("shelf_life_counts", {})
+            template_data.setdefault("top_value_items", [])
+            template_data.setdefault("top_items", [])
+            template_data.setdefault("reorder_items", [])
 
-        return render_template("report.html", **template_data)
+            return render_template("report.html", **template_data)
     except Exception as ex:
         # Log detailed error for debugging
         exc_tb = sys.exc_info()[-1]
@@ -181,6 +184,8 @@ def report_data_get() -> tuple[dict[str, Any], int]:  # noqa: C901
     Returns:
         JSON response with report data or error details.
     """
+    from src.pybackstock.connexion_app import flask_app
+
     try:
         # Get selected visualizations from query parameters
         selected_viz = request.args.getlist("viz")
@@ -197,57 +202,58 @@ def report_data_get() -> tuple[dict[str, Any], int]:  # noqa: C901
                 "reorder_table",
             ]
 
-        # Query all items from database
-        all_items = Grocery.query.all()
+        # Query all items from database - must be within app context
+        with flask_app.app_context():
+            all_items = Grocery.query.all()
 
-        # Always calculate summary metrics
-        summary_data = calculate_summary_metrics(all_items)
+            # Always calculate summary metrics
+            summary_data = calculate_summary_metrics(all_items)
 
-        # Initialize visualization data dictionary
-        viz_data: dict[str, Any] = {}
+            # Initialize visualization data dictionary
+            viz_data: dict[str, Any] = {}
 
-        # Only calculate data for selected visualizations
-        if "stock_health" in selected_viz:
-            viz_data.update(calculate_stock_health_data(all_items))
+            # Only calculate data for selected visualizations
+            if "stock_health" in selected_viz:
+                viz_data.update(calculate_stock_health_data(all_items))
 
-        if "department" in selected_viz:
-            viz_data.update(calculate_department_data(all_items))
+            if "department" in selected_viz:
+                viz_data.update(calculate_department_data(all_items))
 
-        if "age" in selected_viz:
-            viz_data.update(calculate_age_data(all_items))
+            if "age" in selected_viz:
+                viz_data.update(calculate_age_data(all_items))
 
-        if "price_range" in selected_viz:
-            viz_data.update(calculate_price_range_data(all_items))
+            if "price_range" in selected_viz:
+                viz_data.update(calculate_price_range_data(all_items))
 
-        if "shelf_life" in selected_viz:
-            viz_data.update(calculate_shelf_life_data(all_items))
+            if "shelf_life" in selected_viz:
+                viz_data.update(calculate_shelf_life_data(all_items))
 
-        if "top_value" in selected_viz:
-            viz_data.update(calculate_top_value_data(all_items))
+            if "top_value" in selected_viz:
+                viz_data.update(calculate_top_value_data(all_items))
 
-        if "top_price" in selected_viz:
-            viz_data.update(calculate_top_price_data(all_items))
+            if "top_price" in selected_viz:
+                viz_data.update(calculate_top_price_data(all_items))
 
-        if "reorder_table" in selected_viz:
-            viz_data.update(calculate_reorder_data(all_items))
+            if "reorder_table" in selected_viz:
+                viz_data.update(calculate_reorder_data(all_items))
 
-        # Merge all data
-        response_data = {
-            **summary_data,
-            **viz_data,
-            "selected_viz": selected_viz,
-            "item_count": len(all_items),
-        }
+            # Merge all data
+            response_data = {
+                **summary_data,
+                **viz_data,
+                "selected_viz": selected_viz,
+                "item_count": len(all_items),
+            }
 
-        # Provide empty defaults
-        response_data.setdefault("stock_levels", {})
-        response_data.setdefault("dept_counts", {})
-        response_data.setdefault("age_distribution", {})
-        response_data.setdefault("price_ranges", {})
-        response_data.setdefault("shelf_life_counts", {})
-        response_data.setdefault("top_value_items", [])
-        response_data.setdefault("top_items", [])
-        response_data.setdefault("reorder_items", [])
+            # Provide empty defaults
+            response_data.setdefault("stock_levels", {})
+            response_data.setdefault("dept_counts", {})
+            response_data.setdefault("age_distribution", {})
+            response_data.setdefault("price_ranges", {})
+            response_data.setdefault("shelf_life_counts", {})
+            response_data.setdefault("top_value_items", [])
+            response_data.setdefault("top_items", [])
+            response_data.setdefault("reorder_items", [])
     except (AttributeError, ValueError, KeyError, TypeError) as ex:
         # Return detailed error information
         exc_tb = sys.exc_info()[-1]
