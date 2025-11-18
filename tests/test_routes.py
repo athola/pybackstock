@@ -227,3 +227,140 @@ def test_health_endpoint_no_database_dependency(client: FlaskClient) -> None:
 
     # Verify it returns immediately without waiting for DB
     # (already tested in test_health_endpoint_fast_response)
+
+
+@pytest.mark.integration
+def test_report_page_get(client: FlaskClient) -> None:
+    """Test GET request to report page."""
+    response = client.get("/report")
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_report_page_with_data(client: FlaskClient, sample_grocery: None) -> None:
+    """Test report page displays data correctly."""
+    response = client.get("/report")
+    assert response.status_code == 200
+    assert b"Inventory Analytics Report" in response.data
+
+
+@pytest.mark.integration
+def test_report_page_empty_inventory(client: FlaskClient) -> None:
+    """Test report page with empty inventory."""
+    response = client.get("/report")
+    assert response.status_code == 200
+    assert b"No Inventory Data Available" in response.data
+
+
+@pytest.mark.integration
+def test_report_page_with_selected_visualizations(client: FlaskClient, sample_grocery: None) -> None:
+    """Test report page with specific visualizations selected."""
+    response = client.get("/report?viz=stock_health&viz=department")
+    assert response.status_code == 200
+    assert b"Inventory Analytics Report" in response.data
+
+
+@pytest.mark.integration
+def test_report_page_with_single_visualization(client: FlaskClient, sample_grocery: None) -> None:
+    """Test report page with single visualization selected."""
+    response = client.get("/report?viz=stock_health")
+    assert response.status_code == 200
+    assert b"Inventory Analytics Report" in response.data
+
+
+@pytest.mark.integration
+def test_report_page_with_no_viz_parameter(client: FlaskClient, sample_grocery: None) -> None:
+    """Test report page defaults to all visualizations when no viz parameter provided."""
+    response = client.get("/report")
+    assert response.status_code == 200
+    assert b"Inventory Analytics Report" in response.data
+
+
+@pytest.mark.integration
+def test_add_item_with_new_fields(client: FlaskClient) -> None:
+    """Test adding an item with quantity and reorder_point fields."""
+    response = client.post(
+        "/",
+        data={
+            "send-add": "",
+            "id-add": "101",
+            "description-add": "Item with Inventory Fields",
+            "last-sold-add": "2024-01-01",
+            "shelf-life-add": "7d",
+            "department-add": "Test",
+            "price-add": "2.99",
+            "unit-add": "ea",
+            "xfor-add": "1",
+            "cost-add": "1.99",
+            "quantity-add": "25",
+            "reorder-point-add": "15",
+        },
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_add_item_with_zero_quantity(client: FlaskClient) -> None:
+    """Test adding an out-of-stock item (quantity = 0)."""
+    response = client.post(
+        "/",
+        data={
+            "send-add": "",
+            "id-add": "102",
+            "description-add": "Out of Stock Item",
+            "last-sold-add": "2024-01-01",
+            "shelf-life-add": "7d",
+            "department-add": "Test",
+            "price-add": "2.99",
+            "unit-add": "ea",
+            "xfor-add": "1",
+            "cost-add": "1.99",
+            "quantity-add": "0",
+            "reorder-point-add": "10",
+        },
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_csv_upload_with_new_fields(client: FlaskClient) -> None:
+    """Test CSV upload with new inventory fields (quantity, reorder_point, date_added)."""
+    csv_data = (
+        b"id,description,last_sold,shelf_life,department,price,unit,x_for,cost,quantity,reorder_point,date_added\n"
+        b"201,CSV Item New,2024-01-01,7d,CSV Dept,3.99,ea,1,2.99,50,20,2024-01-01\n"
+    )
+    data = {
+        "csv-submit": "",
+        "csv-input": (io.BytesIO(csv_data), "test_new.csv"),
+    }
+    response = client.post("/", data=data, content_type="multipart/form-data")
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_csv_upload_backward_compatibility(client: FlaskClient) -> None:
+    """Test CSV upload with old format (without new fields) for backward compatibility."""
+    csv_data = (
+        b"id,description,last_sold,shelf_life,department,price,unit,x_for,cost\n"
+        b"202,CSV Item Old,2024-01-01,7d,CSV Dept,3.99,ea,1,2.99\n"
+    )
+    data = {
+        "csv-submit": "",
+        "csv-input": (io.BytesIO(csv_data), "test_old.csv"),
+    }
+    response = client.post("/", data=data, content_type="multipart/form-data")
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_search_by_quantity(client: FlaskClient, sample_grocery: None) -> None:
+    """Test searching by quantity field."""
+    response = client.post("/", data={"send-search": "", "column": "quantity", "item": "15"})
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
+def test_search_by_reorder_point(client: FlaskClient, sample_grocery: None) -> None:
+    """Test searching by reorder_point field."""
+    response = client.post("/", data={"send-search": "", "column": "reorder_point", "item": "10"})
+    assert response.status_code == 200

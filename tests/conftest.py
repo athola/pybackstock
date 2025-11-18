@@ -29,6 +29,9 @@ class GroceryData(TypedDict):
     unit: str
     x_for: int
     cost: str
+    quantity: int
+    reorder_point: int
+    date_added: date | str | None
 
 
 @pytest.fixture()
@@ -96,6 +99,9 @@ def sample_grocery_data() -> GroceryData:
         "unit": "ea",
         "x_for": 1,
         "cost": "0.99",
+        "quantity": 15,
+        "reorder_point": 10,
+        "date_added": date(2024, 1, 1),
     }
 
 

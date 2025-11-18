@@ -31,6 +31,8 @@ def test_webpage_has_menu_buttons(client: FlaskClient) -> None:
     assert 'name="search-item"' in data
     assert "Add Item" in data
     assert "Search Item" in data
+    assert "Generate Report" in data
+    assert 'action="/report"' in data
 
 
 @pytest.mark.integration

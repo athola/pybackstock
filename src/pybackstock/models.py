@@ -1,7 +1,7 @@
 """Database models for the pybackstock application."""
 
 from collections.abc import Iterator
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 from src.pybackstock.app import db
@@ -21,6 +21,9 @@ class Grocery(db.Model):  # type: ignore[name-defined]
     unit = db.Column(db.String(10), nullable=False)  # type: ignore[has-type]
     x_for = db.Column(db.Integer, nullable=False)  # type: ignore[has-type]
     cost = db.Column(db.String(20), nullable=False)  # type: ignore[has-type]
+    quantity = db.Column(db.Integer, nullable=False, default=0)  # type: ignore[has-type]
+    reorder_point = db.Column(db.Integer, nullable=False, default=10)  # type: ignore[has-type]
+    date_added = db.Column(db.Date, nullable=False, default=date.today)  # type: ignore[has-type]
 
     def __init__(  # noqa: PLR0913
         self,
@@ -33,6 +36,9 @@ class Grocery(db.Model):  # type: ignore[name-defined]
         unit: str,
         x_for: int,
         cost: str,
+        quantity: int = 0,
+        reorder_point: int = 10,
+        date_added: date | str | None = None,
     ) -> None:
         """Initialize a Grocery item.
 
@@ -46,6 +52,9 @@ class Grocery(db.Model):  # type: ignore[name-defined]
             unit: Unit of measurement.
             x_for: Quantity for pricing (e.g., 2 for $5).
             cost: Cost of the item.
+            quantity: Current quantity in stock (default: 0).
+            reorder_point: Minimum quantity before reordering (default: 10).
+            date_added: Date when item was added to inventory (default: today).
         """
         self.id = int(item_id)
         self.description = description
@@ -63,6 +72,18 @@ class Grocery(db.Model):  # type: ignore[name-defined]
         self.unit = unit
         self.x_for = int(x_for)
         self.cost = cost
+        self.quantity = int(quantity)
+        self.reorder_point = int(reorder_point)
+        # Handle date_added
+        if date_added is None:
+            self.date_added = datetime.now(tz=timezone.utc).date()  # noqa: UP017
+        elif isinstance(date_added, str):
+            try:
+                self.date_added = datetime.strptime(date_added, "%Y-%m-%d").date()
+            except (ValueError, AttributeError):
+                self.date_added = datetime.now(tz=timezone.utc).date()  # noqa: UP017
+        else:
+            self.date_added = date_added
 
     def __iter__(self) -> Iterator[tuple[str, Any]]:
         """Make the model iterable for JSON serialization.
@@ -79,3 +100,6 @@ class Grocery(db.Model):  # type: ignore[name-defined]
         yield "unit", self.unit
         yield "x_for", self.x_for
         yield "cost", self.cost
+        yield "quantity", self.quantity
+        yield "reorder_point", self.reorder_point
+        yield "date_added", str(self.date_added) if self.date_added else None

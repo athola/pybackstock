@@ -223,6 +223,122 @@
           grid-template-columns: repeat(2, 1fr);
         }
       }
+
+      /* Visualization Selector Styles */
+      .viz-selector-container {
+        margin-bottom: 10px;
+        width: 100%;
+      }
+
+      .viz-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .viz-dropdown-toggle {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 15px;
+        background-color: white;
+        border: 2px solid #CE2029;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+        color: #333;
+        transition: all 0.3s;
+      }
+
+      .viz-dropdown-toggle:hover {
+        background-color: #f8f9fa;
+        border-color: #a31920;
+      }
+
+      .viz-dropdown-toggle:focus {
+        outline: 2px solid #CE2029;
+        outline-offset: 2px;
+      }
+
+      .viz-caret {
+        font-size: 12px;
+        transition: transform 0.3s;
+      }
+
+      .viz-dropdown-toggle.open .viz-caret {
+        transform: rotate(180deg);
+      }
+
+      .viz-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 5px;
+        background-color: white;
+        border: 2px solid #CE2029;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+      }
+
+      .viz-dropdown-menu.show {
+        display: block;
+      }
+
+      .viz-dropdown-header {
+        padding: 12px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .viz-dropdown-divider {
+        height: 1px;
+        background-color: #dee2e6;
+        margin: 0;
+      }
+
+      .viz-checkbox-label {
+        display: block;
+        padding: 12px 15px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s;
+        font-size: 16px;
+      }
+
+      .viz-checkbox-label:hover {
+        background-color: #f8f9fa;
+      }
+
+      .viz-checkbox-label input[type="checkbox"] {
+        margin-right: 10px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        vertical-align: middle;
+      }
+
+      /* Mobile-specific adjustments */
+      @media (max-width: 768px) {
+        .viz-dropdown-menu {
+          max-height: 300px;
+        }
+
+        .viz-checkbox-label {
+          padding: 14px 15px;
+          font-size: 16px;
+        }
+
+        .viz-checkbox-label input[type="checkbox"] {
+          width: 20px;
+          height: 20px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -254,6 +370,51 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button name="search-item" id="search" type="submit" class="btn btn-menu">Search Item</button>
           </form>
+          <form role="form" name="generate-report-form" method="GET" action="/report" id="report-form">
+            <!-- Visualization Selection Dropdown -->
+            <div class="viz-selector-container">
+              <label for="viz-selector" style="font-weight: bold; margin-bottom: 8px; display: block;">Select Visualizations:</label>
+              <div class="viz-dropdown">
+                <button type="button" class="viz-dropdown-toggle" id="viz-dropdown-toggle">
+                  <span id="viz-selection-text">All Visualizations</span>
+                  <span class="viz-caret">▼</span>
+                </button>
+                <div class="viz-dropdown-menu" id="viz-dropdown-menu">
+                  <div class="viz-dropdown-header">
+                    <label class="viz-checkbox-label">
+                      <input type="checkbox" id="select-all-viz" checked> <strong>Select All</strong>
+                    </label>
+                  </div>
+                  <div class="viz-dropdown-divider"></div>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="stock_health" class="viz-checkbox" checked> Stock Level Health
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="department" class="viz-checkbox" checked> Items by Department
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="age" class="viz-checkbox" checked> Inventory Age
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="price_range" class="viz-checkbox" checked> Price Range
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="shelf_life" class="viz-checkbox" checked> Shelf Life
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="top_value" class="viz-checkbox" checked> Top Items by Value
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="top_price" class="viz-checkbox" checked> Top Items by Price
+                  </label>
+                  <label class="viz-checkbox-label">
+                    <input type="checkbox" name="viz" value="reorder_table" class="viz-checkbox" checked> Reorder Alert Table
+                  </label>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-menu" style="margin-top: 12px;">Generate Report</button>
+          </form>
         </div>
       </div>
       <!-- Forms Section -->
@@ -273,6 +434,9 @@
                 <option>unit</option>
                 <option>x_for</option>
                 <option>cost</option>
+                <option>quantity</option>
+                <option>reorder_point</option>
+                <option>date_added</option>
               </select>
             </div>
             <div class="form-group">
@@ -320,6 +484,14 @@
               <label for="add-cost">Cost:</label>
               <input type="text" name="cost-add" class="form-control" id="add-cost" placeholder="Enter cost" required>
             </div>
+            <div class="form-group">
+              <label for="add-quantity">Quantity in Stock:</label>
+              <input type="number" name="quantity-add" class="form-control" id="add-quantity" placeholder="Enter quantity" value="0" required>
+            </div>
+            <div class="form-group">
+              <label for="add-reorder-point">Reorder Point:</label>
+              <input type="number" name="reorder-point-add" class="form-control" id="add-reorder-point" placeholder="Enter reorder point" value="10" required>
+            </div>
             <button name="send-add" type="submit" class="btn btn-success">Add</button>
           </form>
         {% endif %}
@@ -352,6 +524,9 @@
               <div class="item-detail"><strong>Unit:</strong> {{ item['unit'] }}</div>
               <div class="item-detail"><strong>xFor:</strong> {{ item['x_for'] }}</div>
               <div class="item-detail"><strong>Cost:</strong> {{ item['cost'] }}</div>
+              <div class="item-detail"><strong>Quantity:</strong> {{ item['quantity'] }}</div>
+              <div class="item-detail"><strong>Reorder Point:</strong> {{ item['reorder_point'] }}</div>
+              <div class="item-detail"><strong>Date Added:</strong> {{ item['date_added'] }}</div>
             </div>
           {% endfor %}
         {% else %}
@@ -369,5 +544,81 @@
 
     <script src="//code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script>
+      // Visualization selector functionality
+      (function() {
+        const dropdownToggle = document.getElementById('viz-dropdown-toggle');
+        const dropdownMenu = document.getElementById('viz-dropdown-menu');
+        const selectAllCheckbox = document.getElementById('select-all-viz');
+        const vizCheckboxes = document.querySelectorAll('.viz-checkbox');
+        const selectionText = document.getElementById('viz-selection-text');
+
+        if (!dropdownToggle || !dropdownMenu) return;
+
+        // Toggle dropdown
+        dropdownToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropdownMenu.classList.toggle('show');
+          dropdownToggle.classList.toggle('open');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+            dropdownMenu.classList.remove('show');
+            dropdownToggle.classList.remove('open');
+          }
+        });
+
+        // Prevent dropdown from closing when clicking inside
+        dropdownMenu.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+
+        // Update selection text
+        function updateSelectionText() {
+          const checkedCount = document.querySelectorAll('.viz-checkbox:checked').length;
+          const totalCount = vizCheckboxes.length;
+
+          if (checkedCount === 0) {
+            selectionText.textContent = 'No visualizations selected';
+          } else if (checkedCount === totalCount) {
+            selectionText.textContent = 'All Visualizations';
+          } else if (checkedCount === 1) {
+            const checkedBox = document.querySelector('.viz-checkbox:checked');
+            selectionText.textContent = checkedBox.parentElement.textContent.trim();
+          } else {
+            selectionText.textContent = checkedCount + ' visualizations selected';
+          }
+
+          // Update select all checkbox state
+          if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedCount === totalCount;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+          }
+        }
+
+        // Select/deselect all
+        if (selectAllCheckbox) {
+          selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            vizCheckboxes.forEach(function(checkbox) {
+              checkbox.checked = isChecked;
+            });
+            updateSelectionText();
+          });
+        }
+
+        // Individual checkbox changes
+        vizCheckboxes.forEach(function(checkbox) {
+          checkbox.addEventListener('change', updateSelectionText);
+        });
+
+        // Initialize
+        updateSelectionText();
+      })();
+    </script>
   </body>
 </html>
