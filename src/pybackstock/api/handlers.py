@@ -95,7 +95,37 @@ def index_post() -> str:
     )
 
 
-def report_get() -> str:  # noqa: C901
+def _calculate_visualizations(selected_viz: list[str], all_items: list[Any]) -> dict[str, Any]:
+    """Calculate data for selected visualizations.
+
+    Args:
+        selected_viz: List of visualization names to calculate.
+        all_items: List of all grocery items from database.
+
+    Returns:
+        Dictionary containing calculated visualization data.
+    """
+    # Map visualization names to their calculation functions
+    viz_calculators = {
+        "stock_health": calculate_stock_health_data,
+        "department": calculate_department_data,
+        "age": calculate_age_data,
+        "price_range": calculate_price_range_data,
+        "shelf_life": calculate_shelf_life_data,
+        "top_value": calculate_top_value_data,
+        "top_price": calculate_top_price_data,
+        "reorder_table": calculate_reorder_data,
+    }
+
+    viz_data: dict[str, Any] = {}
+    for viz_name in selected_viz:
+        if viz_name in viz_calculators:
+            viz_data.update(viz_calculators[viz_name](all_items))
+
+    return viz_data
+
+
+def report_get() -> str:
     """Generate and display inventory analytics report.
 
     Returns:
@@ -124,33 +154,8 @@ def report_get() -> str:  # noqa: C901
             # Always calculate summary metrics (shown in summary cards)
             summary_data = calculate_summary_metrics(all_items)
 
-            # Initialize visualization data dictionary
-            viz_data: dict[str, Any] = {}
-
-            # Only calculate data for selected visualizations
-            if "stock_health" in selected_viz:
-                viz_data.update(calculate_stock_health_data(all_items))
-
-            if "department" in selected_viz:
-                viz_data.update(calculate_department_data(all_items))
-
-            if "age" in selected_viz:
-                viz_data.update(calculate_age_data(all_items))
-
-            if "price_range" in selected_viz:
-                viz_data.update(calculate_price_range_data(all_items))
-
-            if "shelf_life" in selected_viz:
-                viz_data.update(calculate_shelf_life_data(all_items))
-
-            if "top_value" in selected_viz:
-                viz_data.update(calculate_top_value_data(all_items))
-
-            if "top_price" in selected_viz:
-                viz_data.update(calculate_top_price_data(all_items))
-
-            if "reorder_table" in selected_viz:
-                viz_data.update(calculate_reorder_data(all_items))
+            # Calculate data for selected visualizations
+            viz_data = _calculate_visualizations(selected_viz, all_items)
 
             # Merge summary data and visualization data
             template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
@@ -177,7 +182,7 @@ def report_get() -> str:  # noqa: C901
         raise
 
 
-def report_data_get() -> tuple[dict[str, Any], int]:  # noqa: C901
+def report_data_get() -> tuple[dict[str, Any], int]:
     """Get report data as JSON for debugging.
 
     Returns:
@@ -206,33 +211,8 @@ def report_data_get() -> tuple[dict[str, Any], int]:  # noqa: C901
             # Always calculate summary metrics
             summary_data = calculate_summary_metrics(all_items)
 
-            # Initialize visualization data dictionary
-            viz_data: dict[str, Any] = {}
-
-            # Only calculate data for selected visualizations
-            if "stock_health" in selected_viz:
-                viz_data.update(calculate_stock_health_data(all_items))
-
-            if "department" in selected_viz:
-                viz_data.update(calculate_department_data(all_items))
-
-            if "age" in selected_viz:
-                viz_data.update(calculate_age_data(all_items))
-
-            if "price_range" in selected_viz:
-                viz_data.update(calculate_price_range_data(all_items))
-
-            if "shelf_life" in selected_viz:
-                viz_data.update(calculate_shelf_life_data(all_items))
-
-            if "top_value" in selected_viz:
-                viz_data.update(calculate_top_value_data(all_items))
-
-            if "top_price" in selected_viz:
-                viz_data.update(calculate_top_price_data(all_items))
-
-            if "reorder_table" in selected_viz:
-                viz_data.update(calculate_reorder_data(all_items))
+            # Calculate data for selected visualizations
+            viz_data = _calculate_visualizations(selected_viz, all_items)
 
             # Merge all data
             response_data = {
