@@ -244,6 +244,8 @@ def report() -> str:
     Returns:
         Rendered HTML template with report data.
     """
+    from datetime import datetime, timedelta
+
     # Query all items from database
     all_items = Grocery.query.all()
 
@@ -256,9 +258,10 @@ def report() -> str:
         dept = item.department if item.department else "Uncategorized"
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
-    # Price analysis - convert prices to float for analysis
+    # Price and quantity analysis
     prices: list[float] = []
     costs: list[float] = []
+    quantities: list[int] = []
     for item in all_items:
         try:
             # Remove currency symbols and convert to float
@@ -266,13 +269,42 @@ def report() -> str:
             cost_val = float(item.cost.replace("$", "").replace(",", ""))
             prices.append(price_val)
             costs.append(cost_val)
+            quantities.append(item.quantity)
         except (ValueError, AttributeError):
             pass
 
-    # Calculate inventory value and profit margin
-    total_value = sum(prices)
-    total_cost = sum(costs)
-    total_profit_margin = ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else 0
+    # Calculate inventory value and profit margin (considering quantity)
+    total_inventory_value = sum(p * q for p, q in zip(prices, quantities))
+    total_inventory_cost = sum(c * q for c, q in zip(costs, quantities))
+    total_profit_margin = (
+        ((total_inventory_value - total_inventory_cost) / total_inventory_cost * 100)
+        if total_inventory_cost > 0
+        else 0
+    )
+    total_quantity = sum(quantities)
+
+    # Stock level analysis
+    low_stock_items = [item for item in all_items if item.quantity <= item.reorder_point]
+    out_of_stock_items = [item for item in all_items if item.quantity == 0]
+    healthy_stock_items = [item for item in all_items if item.quantity > item.reorder_point]
+
+    # Stock level distribution
+    stock_levels = {"Out of Stock": len(out_of_stock_items), "Low Stock": 0, "Healthy Stock": len(healthy_stock_items)}
+    stock_levels["Low Stock"] = len(low_stock_items) - len(out_of_stock_items)
+
+    # Items needing reorder (for list display)
+    reorder_items = [
+        {
+            "description": item.description,
+            "quantity": item.quantity,
+            "reorder_point": item.reorder_point,
+            "department": item.department or "Uncategorized",
+        }
+        for item in low_stock_items
+        if item.quantity > 0  # Exclude out of stock for this list
+    ]
+    reorder_items.sort(key=lambda x: x["quantity"])
+    reorder_items = reorder_items[:10]  # Top 10 items needing reorder
 
     # Price range distribution
     price_ranges = {"$0-$5": 0, "$5-$10": 0, "$10-$20": 0, "$20-$50": 0, "$50+": 0}
@@ -297,6 +329,18 @@ def report() -> str:
     items_with_prices.sort(key=lambda x: x["price"], reverse=True)
     top_items = items_with_prices[:10]
 
+    # Top 10 items by total value (price * quantity)
+    items_by_value = []
+    for item in all_items:
+        try:
+            price_val = float(item.price.replace("$", "").replace(",", ""))
+            total_val = price_val * item.quantity
+            items_by_value.append({"description": item.description, "value": total_val})
+        except (ValueError, AttributeError):
+            pass
+    items_by_value.sort(key=lambda x: x["value"], reverse=True)
+    top_value_items = items_by_value[:10]
+
     # Shelf life distribution
     shelf_life_counts: dict[str, int] = {}
     for item in all_items:
@@ -304,10 +348,23 @@ def report() -> str:
         shelf_life_counts[shelf] = shelf_life_counts.get(shelf, 0) + 1
 
     # Recent activity - items sold in last 30 days
-    from datetime import datetime, timedelta
-
     recent_threshold = datetime.now().date() - timedelta(days=30)
     recent_sales = sum(1 for item in all_items if item.last_sold and item.last_sold >= recent_threshold)
+
+    # Inventory age analysis
+    today = datetime.now().date()
+    age_distribution = {"0-30 days": 0, "31-60 days": 0, "61-90 days": 0, "90+ days": 0}
+    for item in all_items:
+        if item.date_added:
+            age_days = (today - item.date_added).days
+            if age_days <= 30:
+                age_distribution["0-30 days"] += 1
+            elif age_days <= 60:
+                age_distribution["31-60 days"] += 1
+            elif age_days <= 90:
+                age_distribution["61-90 days"] += 1
+            else:
+                age_distribution["90+ days"] += 1
 
     return render_template(
         "report.html",
@@ -316,10 +373,17 @@ def report() -> str:
         price_ranges=price_ranges,
         top_items=top_items,
         shelf_life_counts=shelf_life_counts,
-        total_value=total_value,
-        total_cost=total_cost,
+        total_value=total_inventory_value,
+        total_cost=total_inventory_cost,
         total_profit_margin=total_profit_margin,
         recent_sales=recent_sales,
+        total_quantity=total_quantity,
+        low_stock_count=len(low_stock_items),
+        out_of_stock_count=len(out_of_stock_items),
+        stock_levels=stock_levels,
+        reorder_items=reorder_items,
+        top_value_items=top_value_items,
+        age_distribution=age_distribution,
     )
 
 
@@ -359,11 +423,17 @@ def get_matching_items(search_column: str, search_item: str) -> Query[Any] | dic
         SQLAlchemy ORM provides SQL injection protection through parameterized queries.
         No manual SQL injection checks are needed.
     """
-    # Handle exact integer searches for id and x_for columns
-    if search_column in ("id", "x_for"):
+    # Handle exact integer searches for id, x_for, quantity, and reorder_point columns
+    if search_column in ("id", "x_for", "quantity", "reorder_point"):
         if not search_item.isdigit():
             return {}
-        column = Grocery.id if search_column == "id" else Grocery.x_for
+        column_map = {
+            "id": Grocery.id,
+            "x_for": Grocery.x_for,
+            "quantity": Grocery.quantity,
+            "reorder_point": Grocery.reorder_point,
+        }
+        column = column_map[search_column]
         return Grocery.query.filter(column == int(search_item))  # type: ignore[no-any-return]
 
     # Build search term based on input
@@ -375,8 +445,9 @@ def get_matching_items(search_column: str, search_item: str) -> Query[Any] | dic
         search_term = f"%{search_item}%"
 
     # Build and return query
-    if search_column == "last_sold":
-        query = Grocery.query.filter(func.to_char(Grocery.last_sold, "%YYYY-MM-DD%").ilike(search_term))
+    if search_column in ("last_sold", "date_added"):
+        date_column = Grocery.last_sold if search_column == "last_sold" else Grocery.date_added
+        query = Grocery.query.filter(func.to_char(date_column, "%YYYY-MM-DD%").ilike(search_term))
     else:
         query = Grocery.query.filter(getattr(Grocery, search_column).ilike(search_term))
 
@@ -398,6 +469,8 @@ def set_item() -> Grocery:
     unit = request.form["unit-add"]
     x_for = int(request.form["xfor-add"])
     cost = request.form["cost-add"]
+    quantity = int(request.form.get("quantity-add", 0))
+    reorder_point = int(request.form.get("reorder-point-add", 10))
     return Grocery(
         item_id=item_id,
         description=description,
@@ -408,6 +481,8 @@ def set_item() -> Grocery:
         unit=unit,
         x_for=x_for,
         cost=cost,
+        quantity=quantity,
+        reorder_point=reorder_point,
     )
 
 
@@ -449,6 +524,11 @@ def iterate_through_csv(csv_input: Any, errors: list[str], items: list[Any]) -> 
     row: list[str]
     for idx, row in enumerate(csv_input):
         if idx != 0:  # Skip header row
+            # Support both old format (9 columns) and new format (12 columns)
+            quantity = int(row[9]) if len(row) > 9 else 0
+            reorder_point = int(row[10]) if len(row) > 10 else 10
+            date_added = row[11] if len(row) > 11 else None
+
             csv_item_to_add = Grocery(
                 item_id=int(row[0]),
                 description=row[1],
@@ -459,5 +539,8 @@ def iterate_through_csv(csv_input: Any, errors: list[str], items: list[Any]) -> 
                 unit=row[6],
                 x_for=int(row[7]),
                 cost=row[8],
+                quantity=quantity,
+                reorder_point=reorder_point,
+                date_added=date_added,
             )
             add_item(csv_item_to_add, errors, items)

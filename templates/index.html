@@ -276,6 +276,9 @@
                 <option>unit</option>
                 <option>x_for</option>
                 <option>cost</option>
+                <option>quantity</option>
+                <option>reorder_point</option>
+                <option>date_added</option>
               </select>
             </div>
             <div class="form-group">
@@ -323,6 +326,14 @@
               <label for="add-cost">Cost:</label>
               <input type="text" name="cost-add" class="form-control" id="add-cost" placeholder="Enter cost" required>
             </div>
+            <div class="form-group">
+              <label for="add-quantity">Quantity in Stock:</label>
+              <input type="number" name="quantity-add" class="form-control" id="add-quantity" placeholder="Enter quantity" value="0" required>
+            </div>
+            <div class="form-group">
+              <label for="add-reorder-point">Reorder Point:</label>
+              <input type="number" name="reorder-point-add" class="form-control" id="add-reorder-point" placeholder="Enter reorder point" value="10" required>
+            </div>
             <button name="send-add" type="submit" class="btn btn-success">Add</button>
           </form>
         {% endif %}
@@ -355,6 +366,9 @@
               <div class="item-detail"><strong>Unit:</strong> {{ item['unit'] }}</div>
               <div class="item-detail"><strong>xFor:</strong> {{ item['x_for'] }}</div>
               <div class="item-detail"><strong>Cost:</strong> {{ item['cost'] }}</div>
+              <div class="item-detail"><strong>Quantity:</strong> {{ item['quantity'] }}</div>
+              <div class="item-detail"><strong>Reorder Point:</strong> {{ item['reorder_point'] }}</div>
+              <div class="item-detail"><strong>Date Added:</strong> {{ item['date_added'] }}</div>
             </div>
           {% endfor %}
         {% else %}
