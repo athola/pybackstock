@@ -181,7 +181,7 @@ def handle_csv_action() -> tuple[list[str], list[Any]]:
             iterate_through_csv(csv_input, errors, items)
         else:
             errors.append("Invalid file type. Needs to be .csv")
-    except (KeyError, ValueError, TypeError, UnicodeDecodeError) as ex:
+    except (KeyError, ValueError, TypeError, UnicodeDecodeError, IndexError) as ex:
         error_type = "Unable to process CSV file. Please check the file format. "
         errors = report_exception(ex, error_type, errors)
     return errors, items
@@ -680,7 +680,7 @@ def add_item(item: Grocery, errors: list[str], items: list[Any]) -> tuple[list[s
             items.append(json_obj)
         else:
             errors.append(f"Unable to add item to database. This item has already been added with ID: {item.id}")
-    except (ValueError, TypeError) as ex:
+    except (ValueError, TypeError, OSError) as ex:
         db.session.rollback()
         errors.append(f"Unable to add item to database. {ex!s}")
     return errors, items
@@ -697,6 +697,10 @@ def iterate_through_csv(csv_input: Any, errors: list[str], items: list[Any]) -> 
     row: list[str]
     for idx, row in enumerate(csv_input):
         if idx != 0:  # Skip header row
+            # Skip empty rows
+            if not row or len(row) < CSV_OLD_FORMAT_COLUMNS:
+                continue
+
             # Support both old format (9 columns) and new format (12 columns)
             quantity = int(row[CSV_QUANTITY_COLUMN]) if len(row) > CSV_OLD_FORMAT_COLUMNS else 0
             reorder_point = int(row[CSV_REORDER_COLUMN]) if len(row) > CSV_REORDER_COLUMN else 10
