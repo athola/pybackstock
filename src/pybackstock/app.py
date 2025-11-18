@@ -246,9 +246,250 @@ def index() -> str:
     )
 
 
+def calculate_summary_metrics(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate summary metrics for all inventory items.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing summary metrics.
+    """
+    total_items = len(items)
+    prices: list[float] = []
+    costs: list[float] = []
+    quantities: list[int] = []
+
+    for item in items:
+        try:
+            price_val = float(item.price.replace("$", "").replace(",", ""))
+            cost_val = float(item.cost.replace("$", "").replace(",", ""))
+            prices.append(price_val)
+            costs.append(cost_val)
+            quantities.append(item.quantity)
+        except (ValueError, AttributeError):
+            pass
+
+    total_inventory_value = sum(p * q for p, q in zip(prices, quantities, strict=True))
+    total_inventory_cost = sum(c * q for c, q in zip(costs, quantities, strict=True))
+    total_profit_margin = (
+        ((total_inventory_value - total_inventory_cost) / total_inventory_cost * 100) if total_inventory_cost > 0 else 0
+    )
+    total_quantity = sum(quantities)
+
+    # Recent activity - items sold in last 30 days
+    recent_threshold = datetime.now(tz=timezone.utc).date() - timedelta(days=30)  # noqa: UP017
+    recent_sales = sum(1 for item in items if item.last_sold and item.last_sold >= recent_threshold)
+
+    # Stock level counts
+    low_stock_items = [item for item in items if item.quantity <= item.reorder_point]
+    out_of_stock_items = [item for item in items if item.quantity == 0]
+
+    return {
+        "total_items": total_items,
+        "total_value": total_inventory_value,
+        "total_cost": total_inventory_cost,
+        "total_profit_margin": total_profit_margin,
+        "total_quantity": total_quantity,
+        "recent_sales": recent_sales,
+        "low_stock_count": len(low_stock_items),
+        "out_of_stock_count": len(out_of_stock_items),
+    }
+
+
+def calculate_stock_health_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate stock health visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing stock level distribution.
+    """
+    low_stock_items = [item for item in items if item.quantity <= item.reorder_point]
+    out_of_stock_items = [item for item in items if item.quantity == 0]
+    healthy_stock_items = [item for item in items if item.quantity > item.reorder_point]
+
+    stock_levels = {
+        "Out of Stock": len(out_of_stock_items),
+        "Low Stock": len(low_stock_items) - len(out_of_stock_items),
+        "Healthy Stock": len(healthy_stock_items),
+    }
+
+    return {"stock_levels": stock_levels}
+
+
+def calculate_department_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate department distribution visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing department counts.
+    """
+    dept_counts: dict[str, int] = {}
+    for item in items:
+        dept = item.department if item.department else "Uncategorized"
+        dept_counts[dept] = dept_counts.get(dept, 0) + 1
+
+    return {"dept_counts": dept_counts}
+
+
+def calculate_age_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate inventory age distribution visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing age distribution.
+    """
+    today = datetime.now(tz=timezone.utc).date()  # noqa: UP017
+    age_distribution = {"0-30 days": 0, "31-60 days": 0, "61-90 days": 0, "90+ days": 0}
+
+    for item in items:
+        if item.date_added:
+            age_days = (today - item.date_added).days
+            if age_days <= AGE_RANGE_BOUNDARIES[0]:
+                age_distribution["0-30 days"] += 1
+            elif age_days <= AGE_RANGE_BOUNDARIES[1]:
+                age_distribution["31-60 days"] += 1
+            elif age_days <= AGE_RANGE_BOUNDARIES[2]:
+                age_distribution["61-90 days"] += 1
+            else:
+                age_distribution["90+ days"] += 1
+
+    return {"age_distribution": age_distribution}
+
+
+def calculate_price_range_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate price range distribution visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing price range counts.
+    """
+    price_ranges = {"$0-$5": 0, "$5-$10": 0, "$10-$20": 0, "$20-$50": 0, "$50+": 0}
+    prices: list[float] = []
+
+    for item in items:
+        try:
+            price_val = float(item.price.replace("$", "").replace(",", ""))
+            prices.append(price_val)
+        except (ValueError, AttributeError):
+            pass
+
+    for price in prices:
+        if price < PRICE_RANGE_BOUNDARIES[0]:
+            price_ranges["$0-$5"] += 1
+        elif price < PRICE_RANGE_BOUNDARIES[1]:
+            price_ranges["$5-$10"] += 1
+        elif price < PRICE_RANGE_BOUNDARIES[2]:
+            price_ranges["$10-$20"] += 1
+        elif price < PRICE_RANGE_BOUNDARIES[3]:
+            price_ranges["$20-$50"] += 1
+        else:
+            price_ranges["$50+"] += 1
+
+    return {"price_ranges": price_ranges}
+
+
+def calculate_shelf_life_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate shelf life distribution visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing shelf life counts.
+    """
+    shelf_life_counts: dict[str, int] = {}
+    for item in items:
+        shelf = item.shelf_life if item.shelf_life else "Unknown"
+        shelf_life_counts[shelf] = shelf_life_counts.get(shelf, 0) + 1
+
+    return {"shelf_life_counts": shelf_life_counts}
+
+
+def calculate_top_value_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate top 10 items by total value visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing top value items.
+    """
+    items_by_value = []
+    for item in items:
+        try:
+            price_val = float(item.price.replace("$", "").replace(",", ""))
+            total_val = price_val * item.quantity
+            items_by_value.append({"description": item.description, "value": total_val})
+        except (ValueError, AttributeError):
+            pass
+
+    items_by_value.sort(key=lambda x: x["value"], reverse=True)
+    top_value_items = items_by_value[:10]
+
+    return {"top_value_items": top_value_items}
+
+
+def calculate_top_price_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate top 10 most expensive items visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing top priced items.
+    """
+    items_with_prices = [
+        {"description": item.description, "price": float(item.price.replace("$", "").replace(",", ""))}
+        for item in items
+        if item.price
+    ]
+    items_with_prices.sort(key=lambda x: x["price"], reverse=True)
+    top_items = items_with_prices[:10]
+
+    return {"top_items": top_items}
+
+
+def calculate_reorder_data(items: list[Grocery]) -> dict[str, Any]:
+    """Calculate items needing reorder visualization data.
+
+    Args:
+        items: List of all grocery items.
+
+    Returns:
+        Dictionary containing items needing reorder.
+    """
+    low_stock_items = [item for item in items if item.quantity <= item.reorder_point]
+
+    reorder_items = [
+        {
+            "description": item.description,
+            "quantity": item.quantity,
+            "reorder_point": item.reorder_point,
+            "department": item.department or "Uncategorized",
+        }
+        for item in low_stock_items
+        if item.quantity > 0  # Exclude out of stock for this list
+    ]
+    reorder_items.sort(key=lambda x: x["quantity"])
+    reorder_items = reorder_items[:10]  # Top 10 items needing reorder
+
+    return {"reorder_items": reorder_items}
+
+
 @app.route("/report", methods=["GET"])
-def report() -> str:  # noqa: C901, PLR0912, PLR0915
+def report() -> str:
     """Generate and display inventory analytics report.
+
+    Only calculates data for selected visualizations to optimize performance.
 
     Returns:
         Rendered HTML template with report data.
@@ -271,141 +512,52 @@ def report() -> str:  # noqa: C901, PLR0912, PLR0915
     # Query all items from database
     all_items = Grocery.query.all()
 
-    # Calculate analytics
-    total_items = len(all_items)
+    # Always calculate summary metrics (shown in summary cards)
+    summary_data = calculate_summary_metrics(all_items)
 
-    # Department distribution
-    dept_counts: dict[str, int] = {}
-    for item in all_items:
-        dept = item.department if item.department else "Uncategorized"
-        dept_counts[dept] = dept_counts.get(dept, 0) + 1
+    # Initialize visualization data dictionary
+    viz_data: dict[str, Any] = {}
 
-    # Price and quantity analysis
-    prices: list[float] = []
-    costs: list[float] = []
-    quantities: list[int] = []
-    for item in all_items:
-        try:
-            # Remove currency symbols and convert to float
-            price_val = float(item.price.replace("$", "").replace(",", ""))
-            cost_val = float(item.cost.replace("$", "").replace(",", ""))
-            prices.append(price_val)
-            costs.append(cost_val)
-            quantities.append(item.quantity)
-        except (ValueError, AttributeError):
-            pass
+    # Only calculate data for selected visualizations
+    if "stock_health" in selected_viz:
+        viz_data.update(calculate_stock_health_data(all_items))
 
-    # Calculate inventory value and profit margin (considering quantity)
-    total_inventory_value = sum(p * q for p, q in zip(prices, quantities, strict=True))
-    total_inventory_cost = sum(c * q for c, q in zip(costs, quantities, strict=True))
-    total_profit_margin = (
-        ((total_inventory_value - total_inventory_cost) / total_inventory_cost * 100) if total_inventory_cost > 0 else 0
-    )
-    total_quantity = sum(quantities)
+    if "department" in selected_viz:
+        viz_data.update(calculate_department_data(all_items))
 
-    # Stock level analysis
-    low_stock_items = [item for item in all_items if item.quantity <= item.reorder_point]
-    out_of_stock_items = [item for item in all_items if item.quantity == 0]
-    healthy_stock_items = [item for item in all_items if item.quantity > item.reorder_point]
+    if "age" in selected_viz:
+        viz_data.update(calculate_age_data(all_items))
 
-    # Stock level distribution
-    stock_levels = {"Out of Stock": len(out_of_stock_items), "Low Stock": 0, "Healthy Stock": len(healthy_stock_items)}
-    stock_levels["Low Stock"] = len(low_stock_items) - len(out_of_stock_items)
+    if "price_range" in selected_viz:
+        viz_data.update(calculate_price_range_data(all_items))
 
-    # Items needing reorder (for list display)
-    reorder_items = [
-        {
-            "description": item.description,
-            "quantity": item.quantity,
-            "reorder_point": item.reorder_point,
-            "department": item.department or "Uncategorized",
-        }
-        for item in low_stock_items
-        if item.quantity > 0  # Exclude out of stock for this list
-    ]
-    reorder_items.sort(key=lambda x: x["quantity"])
-    reorder_items = reorder_items[:10]  # Top 10 items needing reorder
+    if "shelf_life" in selected_viz:
+        viz_data.update(calculate_shelf_life_data(all_items))
 
-    # Price range distribution
-    price_ranges = {"$0-$5": 0, "$5-$10": 0, "$10-$20": 0, "$20-$50": 0, "$50+": 0}
-    for price in prices:
-        if price < PRICE_RANGE_BOUNDARIES[0]:
-            price_ranges["$0-$5"] += 1
-        elif price < PRICE_RANGE_BOUNDARIES[1]:
-            price_ranges["$5-$10"] += 1
-        elif price < PRICE_RANGE_BOUNDARIES[2]:
-            price_ranges["$10-$20"] += 1
-        elif price < PRICE_RANGE_BOUNDARIES[3]:
-            price_ranges["$20-$50"] += 1
-        else:
-            price_ranges["$50+"] += 1
+    if "top_value" in selected_viz:
+        viz_data.update(calculate_top_value_data(all_items))
 
-    # Top 10 most expensive items
-    items_with_prices = [
-        {"description": item.description, "price": float(item.price.replace("$", "").replace(",", ""))}
-        for item in all_items
-        if item.price
-    ]
-    items_with_prices.sort(key=lambda x: x["price"], reverse=True)
-    top_items = items_with_prices[:10]
+    if "top_price" in selected_viz:
+        viz_data.update(calculate_top_price_data(all_items))
 
-    # Top 10 items by total value (price * quantity)
-    items_by_value = []
-    for item in all_items:
-        try:
-            price_val = float(item.price.replace("$", "").replace(",", ""))
-            total_val = price_val * item.quantity
-            items_by_value.append({"description": item.description, "value": total_val})
-        except (ValueError, AttributeError):
-            pass
-    items_by_value.sort(key=lambda x: x["value"], reverse=True)
-    top_value_items = items_by_value[:10]
+    if "reorder_table" in selected_viz:
+        viz_data.update(calculate_reorder_data(all_items))
 
-    # Shelf life distribution
-    shelf_life_counts: dict[str, int] = {}
-    for item in all_items:
-        shelf = item.shelf_life if item.shelf_life else "Unknown"
-        shelf_life_counts[shelf] = shelf_life_counts.get(shelf, 0) + 1
+    # Merge summary data and visualization data
+    template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
 
-    # Recent activity - items sold in last 30 days
-    recent_threshold = datetime.now(tz=timezone.utc).date() - timedelta(days=30)  # noqa: UP017
-    recent_sales = sum(1 for item in all_items if item.last_sold and item.last_sold >= recent_threshold)
+    # Provide empty defaults for visualizations that weren't selected
+    # This prevents template errors if a visualization references missing data
+    template_data.setdefault("stock_levels", {})
+    template_data.setdefault("dept_counts", {})
+    template_data.setdefault("age_distribution", {})
+    template_data.setdefault("price_ranges", {})
+    template_data.setdefault("shelf_life_counts", {})
+    template_data.setdefault("top_value_items", [])
+    template_data.setdefault("top_items", [])
+    template_data.setdefault("reorder_items", [])
 
-    # Inventory age analysis
-    today = datetime.now(tz=timezone.utc).date()  # noqa: UP017
-    age_distribution = {"0-30 days": 0, "31-60 days": 0, "61-90 days": 0, "90+ days": 0}
-    for item in all_items:
-        if item.date_added:
-            age_days = (today - item.date_added).days
-            if age_days <= AGE_RANGE_BOUNDARIES[0]:
-                age_distribution["0-30 days"] += 1
-            elif age_days <= AGE_RANGE_BOUNDARIES[1]:
-                age_distribution["31-60 days"] += 1
-            elif age_days <= AGE_RANGE_BOUNDARIES[2]:
-                age_distribution["61-90 days"] += 1
-            else:
-                age_distribution["90+ days"] += 1
-
-    return render_template(
-        "report.html",
-        total_items=total_items,
-        dept_counts=dept_counts,
-        price_ranges=price_ranges,
-        top_items=top_items,
-        shelf_life_counts=shelf_life_counts,
-        total_value=total_inventory_value,
-        total_cost=total_inventory_cost,
-        total_profit_margin=total_profit_margin,
-        recent_sales=recent_sales,
-        total_quantity=total_quantity,
-        low_stock_count=len(low_stock_items),
-        out_of_stock_count=len(out_of_stock_items),
-        stock_levels=stock_levels,
-        reorder_items=reorder_items,
-        top_value_items=top_value_items,
-        age_distribution=age_distribution,
-        selected_viz=selected_viz,
-    )
+    return render_template("report.html", **template_data)
 
 
 def report_exception(ex: Exception, error_type: str, errors: list[str]) -> list[str]:
