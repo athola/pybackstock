@@ -36,9 +36,7 @@ class TestConnexionHealthEndpoint:
     def test_health_endpoint_exists(self, connexion_client: Any) -> None:
         """Test that /health endpoint is registered in Connexion app."""
         response = connexion_client.get("/health")
-        assert response.status_code == 200, (
-            f"Health endpoint should return 200, got {response.status_code}"
-        )
+        assert response.status_code == 200, f"Health endpoint should return 200, got {response.status_code}"
 
     def test_health_endpoint_returns_json(self, connexion_client: Any) -> None:
         """Test that /health endpoint returns valid JSON."""
@@ -111,9 +109,7 @@ class TestHealthCheckRobustness:
         """Test that health endpoint handles HEAD requests."""
         response = connexion_client.head("/health")
         # Should return 200 or 405 (method not allowed) but not 404
-        assert response.status_code in (200, 405), (
-            f"HEAD request should not return 404, got {response.status_code}"
-        )
+        assert response.status_code in (200, 405), f"HEAD request should not return 404, got {response.status_code}"
 
     def test_health_endpoint_cors_safe(self, connexion_client: Any) -> None:
         """Test that health endpoint can be accessed from monitoring systems."""
@@ -133,6 +129,4 @@ class TestHealthCheckRobustness:
             responses.append(response.status_code)
 
         # All requests should succeed
-        assert all(status == 200 for status in responses), (
-            f"All health checks should return 200, got: {responses}"
-        )
+        assert all(status == 200 for status in responses), f"All health checks should return 200, got: {responses}"

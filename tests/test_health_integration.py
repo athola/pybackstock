@@ -48,12 +48,8 @@ def test_health_endpoint_via_gunicorn() -> None:
         assert "Exception in worker process" not in result.stderr, (
             f"Gunicorn failed to load app. Error: {result.stderr}"
         )
-        assert "ModuleNotFoundError" not in result.stderr, (
-            f"Module import error: {result.stderr}"
-        )
-        assert "AttributeError" not in result.stderr, (
-            f"Attribute error when loading app: {result.stderr}"
-        )
+        assert "ModuleNotFoundError" not in result.stderr, f"Module import error: {result.stderr}"
+        assert "AttributeError" not in result.stderr, f"Attribute error when loading app: {result.stderr}"
 
     except subprocess.TimeoutExpired:
         # Timeout is acceptable - we just want to verify it starts
@@ -74,13 +70,9 @@ def test_app_import_succeeds() -> None:
     # Verify health endpoint is registered
     with app.test_client() as client:
         response = client.get("/health")
-        assert response.status_code == 200, (
-            f"Health endpoint should return 200, got {response.status_code}"
-        )
+        assert response.status_code == 200, f"Health endpoint should return 200, got {response.status_code}"
         data = response.get_json()
-        assert data.get("status") == "healthy", (
-            f"Expected status='healthy', got {data}"
-        )
+        assert data.get("status") == "healthy", f"Expected status='healthy', got {data}"
 
 
 @pytest.mark.integration
