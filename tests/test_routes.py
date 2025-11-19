@@ -233,11 +233,6 @@ def test_health_endpoint_no_database_dependency(client: FlaskClient) -> None:
 # The /report route is handled by Connexion (see openapi.yaml -> src.pybackstock.api.handlers.report_get)
 # These Flask-client tests are deprecated - use test_api_handlers.py::TestReportGetHandler instead
 
-# @pytest.mark.integration
-# def test_report_page_get(client: FlaskClient) -> None:
-#     """DEPRECATED: Test GET request to report page. Use test_api_handlers.py instead."""
-#     pass
-
 
 @pytest.mark.integration
 def test_add_item_with_new_fields(client: FlaskClient) -> None:

@@ -6,7 +6,6 @@ to access the /report route, which is now handled exclusively by Connexion.
 The /report functionality is comprehensively tested in test_api_handlers.py::TestReportGetHandler
 """
 
-import io
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -375,16 +374,6 @@ def test_price_range_analytics(client: FlaskClient, app: Flask) -> None:
 # NOTE: Workflow tests with /report have been deprecated
 # The /report route is handled by Connexion (see openapi.yaml -> src.pybackstock.api.handlers.report_get)
 # Report functionality is tested in test_api_handlers.py::TestReportGetHandler
-
-# @pytest.mark.integration
-# def test_user_workflow_add_item_then_view_report(client: FlaskClient) -> None:
-#     """DEPRECATED: Workflow test. Report functionality tested in test_api_handlers.py"""
-#     pass
-
-# @pytest.mark.integration
-# def test_user_workflow_csv_import_then_report(client: FlaskClient) -> None:
-#     """DEPRECATED: Workflow test. Report functionality tested in test_api_handlers.py"""
-#     pass
 
 
 @pytest.mark.integration
