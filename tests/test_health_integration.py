@@ -4,9 +4,12 @@ These tests verify the health check works correctly for deployment scenarios.
 """
 
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
+
+from src.pybackstock.app import app
 
 
 @pytest.mark.integration
@@ -20,8 +23,8 @@ def test_health_endpoint_via_gunicorn() -> None:
 
     try:
         # Try to start Gunicorn briefly to verify it can load the app
-        result = subprocess.run(
-            [
+        result = subprocess.run(  # noqa: S603
+            [  # noqa: S607
                 "uv",
                 "run",
                 "gunicorn",
@@ -65,24 +68,19 @@ def test_app_import_succeeds() -> None:
 
     This verifies the import path used in deployment works.
     """
-    try:
-        from src.pybackstock.app import app
+    assert app is not None, "Failed to import Flask app"
+    assert hasattr(app, "config"), "Imported object is not a Flask app"
 
-        assert app is not None, "Failed to import Flask app"
-        assert hasattr(app, "config"), "Imported object is not a Flask app"
-
-        # Verify health endpoint is registered
-        with app.test_client() as client:
-            response = client.get("/health")
-            assert response.status_code == 200, (
-                f"Health endpoint should return 200, got {response.status_code}"
-            )
-            data = response.get_json()
-            assert data.get("status") == "healthy", (
-                f"Expected status='healthy', got {data}"
-            )
-    except Exception as e:
-        pytest.fail(f"Failed to import or test app: {e}")
+    # Verify health endpoint is registered
+    with app.test_client() as client:
+        response = client.get("/health")
+        assert response.status_code == 200, (
+            f"Health endpoint should return 200, got {response.status_code}"
+        )
+        data = response.get_json()
+        assert data.get("status") == "healthy", (
+            f"Expected status='healthy', got {data}"
+        )
 
 
 @pytest.mark.integration
@@ -91,15 +89,12 @@ def test_deployment_configuration_matches_tests() -> None:
 
     This ensures tests accurately reflect production deployment.
     """
-    # Import the Flask app object (not the module)
-    from src.pybackstock.app import app as flask_app
-
     # Verify the app is a Flask instance
-    assert flask_app is not None
-    assert hasattr(flask_app, "test_client")
+    assert app is not None
+    assert hasattr(app, "test_client")
 
     # Verify health endpoint works
-    with flask_app.test_client() as client:
+    with app.test_client() as client:
         response = client.get("/health")
         assert response.status_code == 200
         assert response.get_json()["status"] == "healthy"
@@ -116,11 +111,7 @@ def test_health_endpoint_deployment_ready() -> None:
     - Works without database connection
     - No external dependencies
     """
-    from src.pybackstock.app import app
-
     with app.test_client() as client:
-        import time
-
         # Test response time
         start = time.time()
         response = client.get("/health")

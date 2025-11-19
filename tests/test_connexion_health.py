@@ -7,13 +7,19 @@ Flask's url_map. Always use connexion_app.test_client() (Starlette TestClient),
 not flask_app.test_client() (Flask test client).
 """
 
+import time
+from typing import Any
+
+import connexion
 import pytest
 
+from src.pybackstock.api.handlers import health_check
+from src.pybackstock.connexion_app import app as exported_app
 from src.pybackstock.connexion_app import connexion_app
 
 
 @pytest.fixture()
-def connexion_client():
+def connexion_client() -> Any:
     """Create a test client for the Connexion app.
 
     Returns:
@@ -27,14 +33,14 @@ def connexion_client():
 class TestConnexionHealthEndpoint:
     """Tests for the Connexion health check endpoint."""
 
-    def test_health_endpoint_exists(self, connexion_client) -> None:
+    def test_health_endpoint_exists(self, connexion_client: Any) -> None:
         """Test that /health endpoint is registered in Connexion app."""
         response = connexion_client.get("/health")
         assert response.status_code == 200, (
             f"Health endpoint should return 200, got {response.status_code}"
         )
 
-    def test_health_endpoint_returns_json(self, connexion_client) -> None:
+    def test_health_endpoint_returns_json(self, connexion_client: Any) -> None:
         """Test that /health endpoint returns valid JSON."""
         response = connexion_client.get("/health")
         assert response.status_code == 200
@@ -44,10 +50,8 @@ class TestConnexionHealthEndpoint:
         assert "status" in data, "Response should contain 'status' field"
         assert data["status"] == "healthy", "Status should be 'healthy'"
 
-    def test_health_endpoint_fast_response(self, connexion_client) -> None:
+    def test_health_endpoint_fast_response(self, connexion_client: Any) -> None:
         """Test that /health endpoint responds quickly."""
-        import time
-
         start_time = time.time()
         response = connexion_client.get("/health")
         elapsed_time = time.time() - start_time
@@ -55,7 +59,7 @@ class TestConnexionHealthEndpoint:
         assert response.status_code == 200
         assert elapsed_time < 1.0, f"Health check took {elapsed_time:.2f}s, should be < 1s"
 
-    def test_health_endpoint_no_database_required(self, connexion_client) -> None:
+    def test_health_endpoint_no_database_required(self, connexion_client: Any) -> None:
         """Test that /health endpoint works without database connection."""
         # This should work even without initializing the database
         response = connexion_client.get("/health")
@@ -63,16 +67,12 @@ class TestConnexionHealthEndpoint:
 
     def test_connexion_app_type(self) -> None:
         """Test that connexion_app is properly configured."""
-        import connexion
-
         assert isinstance(connexion_app, connexion.FlaskApp), (
             f"connexion_app should be a connexion.FlaskApp, got {type(connexion_app)}"
         )
 
     def test_health_handler_function_exists(self) -> None:
         """Test that the health_check handler function can be imported."""
-        from src.pybackstock.api.handlers import health_check
-
         assert callable(health_check), "health_check should be a callable function"
 
         # Test that it returns the expected format
@@ -96,13 +96,9 @@ class TestConnexionASGICompatibility:
 
     def test_connexion_app_exported_for_gunicorn(self) -> None:
         """Test that connexion_app is properly exported for Gunicorn with Uvicorn workers."""
-        from src.pybackstock.connexion_app import app as exported_app
-
         assert exported_app is not None, "app should be exported from connexion_app"
 
         # For Gunicorn with uvicorn workers, we export the ConnexionApp
-        import connexion
-
         assert isinstance(exported_app, connexion.FlaskApp), (
             "Exported app should be connexion.FlaskApp for ASGI deployment"
         )
@@ -111,7 +107,7 @@ class TestConnexionASGICompatibility:
 class TestHealthCheckRobustness:
     """Tests for health check robustness and edge cases."""
 
-    def test_health_endpoint_with_head_request(self, connexion_client) -> None:
+    def test_health_endpoint_with_head_request(self, connexion_client: Any) -> None:
         """Test that health endpoint handles HEAD requests."""
         response = connexion_client.head("/health")
         # Should return 200 or 405 (method not allowed) but not 404
@@ -119,7 +115,7 @@ class TestHealthCheckRobustness:
             f"HEAD request should not return 404, got {response.status_code}"
         )
 
-    def test_health_endpoint_cors_safe(self, connexion_client) -> None:
+    def test_health_endpoint_cors_safe(self, connexion_client: Any) -> None:
         """Test that health endpoint can be accessed from monitoring systems."""
         # Health checks often come from external monitoring systems
         response = connexion_client.get(
@@ -128,7 +124,7 @@ class TestHealthCheckRobustness:
         )
         assert response.status_code == 200, "Health check should work with Origin header"
 
-    def test_health_endpoint_under_load(self, connexion_client) -> None:
+    def test_health_endpoint_under_load(self, connexion_client: Any) -> None:
         """Test that health endpoint handles multiple rapid requests."""
         # Simulate monitoring system polling
         responses = []

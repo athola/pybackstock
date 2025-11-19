@@ -120,7 +120,6 @@ try:
         arguments={"title": "PyBackstock Inventory Management API"},
         pythonic_params=True,
         validate_responses=False,  # Disable for now to avoid validation issues
-        # resolver_error=500,  # Uncomment for debugging operation resolution failures
     )
     logger.info("OpenAPI spec loaded successfully!")
     logger.debug("API result: %s", api_result)
@@ -135,7 +134,8 @@ try:
     )
 except (FileNotFoundError, ValueError, KeyError) as e:
     logger.exception("Error loading OpenAPI spec")
-    raise RuntimeError(f"Failed to load OpenAPI specification: {e}") from e
+    msg = f"Failed to load OpenAPI specification: {e}"
+    raise RuntimeError(msg) from e
 
 # Export the Connexion app for ASGI deployment (Gunicorn with Uvicorn workers)
 # The connexion_app wraps Flask and handles routing via ASGI middleware

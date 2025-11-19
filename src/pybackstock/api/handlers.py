@@ -6,7 +6,7 @@ import sys
 import traceback
 from typing import Any
 
-from flask import current_app, render_template, request
+from flask import render_template, request
 
 from src.pybackstock.app import (
     FormAction,
