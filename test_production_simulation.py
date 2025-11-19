@@ -119,20 +119,20 @@ try:
     print(f"   Response Size: {len(response_content)} bytes")
 
     if response.status_code == 200:
-        print("   ✅ SUCCESS - Report generated without errors!")
+        print("   [PASS] SUCCESS - Report generated without errors!")
         # Check for key content
         html = response.text if hasattr(response, "text") else response_content.decode("utf-8")
         if "Inventory Analytics Report" in html:
-            print("   ✅ Report contains expected content")
+            print("   [PASS] Report contains expected content")
         if "Fresh Apples" in html or "Organic Milk" in html:
-            print("   ✅ Report displays inventory items")
+            print("   [PASS] Report displays inventory items")
     else:
-        print(f"   ❌ FAILED - Got {response.status_code} status code")
+        print(f"   [FAIL] FAILED - Got {response.status_code} status code")
         response_text = response.text if hasattr(response, "text") else response_content.decode("utf-8")
         print(f"   Response: {response_text[:500]}")
         sys.exit(1)
 except Exception as e:
-    print(f"   ❌ FAILED - Exception: {e}")
+    print(f"   [FAIL] FAILED - Exception: {e}")
     import traceback
 
     traceback.print_exc()
@@ -148,12 +148,12 @@ try:
     print(f"   Status Code: {response.status_code}")
 
     if response.status_code == 200:
-        print("   ✅ SUCCESS - Filtered report generated!")
+        print("   [PASS] SUCCESS - Filtered report generated!")
     else:
-        print(f"   ❌ FAILED - Got {response.status_code} status code")
+        print(f"   [FAIL] FAILED - Got {response.status_code} status code")
         sys.exit(1)
 except Exception as e:
-    print(f"   ❌ FAILED - Exception: {e}")
+    print(f"   [FAIL] FAILED - Exception: {e}")
     sys.exit(1)
 
 print()
@@ -172,12 +172,12 @@ try:
         print(f"   Total Items: {data['total_items']}")
         print(f"   Out of Stock: {data['out_of_stock_count']}")
         print(f"   Low Stock: {data['low_stock_count']}")
-        print("   ✅ SUCCESS - JSON API working correctly!")
+        print("   [PASS] SUCCESS - JSON API working correctly!")
     else:
-        print(f"   ❌ FAILED - Got {response.status_code} status code")
+        print(f"   [FAIL] FAILED - Got {response.status_code} status code")
         sys.exit(1)
 except Exception as e:
-    print(f"   ❌ FAILED - Exception: {e}")
+    print(f"   [FAIL] FAILED - Exception: {e}")
     sys.exit(1)
 
 print()
@@ -198,14 +198,14 @@ try:
         response_content = response.get_data() if hasattr(response, "get_data") else b""
         html = response.text if hasattr(response, "text") else response_content.decode("utf-8")
         if "No Inventory Data Available" in html or "0" in html:
-            print("   ✅ SUCCESS - Empty database handled gracefully!")
+            print("   [PASS] SUCCESS - Empty database handled gracefully!")
         else:
-            print("   ✅ SUCCESS - Report generated (no error on empty DB)")
+            print("   [PASS] SUCCESS - Report generated (no error on empty DB)")
     else:
-        print(f"   ❌ FAILED - Got {response.status_code} status code")
+        print(f"   [FAIL] FAILED - Got {response.status_code} status code")
         sys.exit(1)
 except Exception as e:
-    print(f"   ❌ FAILED - Exception: {e}")
+    print(f"   [FAIL] FAILED - Exception: {e}")
     sys.exit(1)
 
 print()
@@ -240,15 +240,15 @@ try:
         response = client.get("/report")
         if response.status_code != 200:
             failed_requests += 1
-            print(f"   ❌ Request {i + 1} failed with status {response.status_code}")
+            print(f"   [FAIL] Request {i + 1} failed with status {response.status_code}")
 
     if failed_requests == 0:
-        print("   ✅ SUCCESS - All 10 concurrent requests succeeded!")
+        print("   [PASS] SUCCESS - All 10 concurrent requests succeeded!")
     else:
-        print(f"   ❌ FAILED - {failed_requests}/10 requests failed")
+        print(f"   [FAIL] FAILED - {failed_requests}/10 requests failed")
         sys.exit(1)
 except Exception as e:
-    print(f"   ❌ FAILED - Exception: {e}")
+    print(f"   [FAIL] FAILED - Exception: {e}")
     sys.exit(1)
 
 print()
@@ -262,12 +262,12 @@ print("   ✓ Test database removed")
 print()
 
 print("=" * 80)
-print("🎉 ALL PRODUCTION SIMULATION TESTS PASSED! 🎉")
+print("ALL PRODUCTION SIMULATION TESTS PASSED! ")
 print("=" * 80)
 print()
-print("✅ The report generation is working correctly in production-like environment")
-print("✅ All scenarios tested: full reports, filtered reports, JSON API, empty DB, concurrent requests")
-print("✅ No 500 errors encountered")
+print("[PASS] The report generation is working correctly in production-like environment")
+print("[PASS] All scenarios tested: full reports, filtered reports, JSON API, empty DB, concurrent requests")
+print("[PASS] No 500 errors encountered")
 print()
 print("This fix is SAFE TO DEPLOY to production!")
 print()
