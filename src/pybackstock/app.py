@@ -5,9 +5,10 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -88,6 +89,8 @@ db.init_app(app)
 
 # Import models after db is initialized
 from src.pybackstock.models import Grocery  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 
 class FormAction:
@@ -294,7 +297,7 @@ def calculate_summary_metrics(items: list[Grocery]) -> dict[str, Any]:
     total_quantity = sum(quantities)
 
     # Recent activity - items sold in last 30 days
-    recent_threshold = datetime.now(tz=timezone.utc).date() - timedelta(days=30)  # noqa: UP017
+    recent_threshold = datetime.now(UTC).date() - timedelta(days=30)
     recent_sales = sum(1 for item in items if item.last_sold and item.last_sold >= recent_threshold)
 
     # Stock level counts
@@ -361,7 +364,7 @@ def calculate_age_data(items: list[Grocery]) -> dict[str, Any]:
     Returns:
         Dictionary containing age distribution.
     """
-    today = datetime.now(tz=timezone.utc).date()  # noqa: UP017
+    today = datetime.now(UTC).date()
     age_distribution = {"0-30 days": 0, "31-60 days": 0, "61-90 days": 0, "90+ days": 0}
 
     for item in items:
@@ -596,7 +599,7 @@ def report_exception(ex: Exception, error_type: str, errors: list[str]) -> list[
     exc_tb = sys.exc_info()[-1]
     tb_lineno: int | str = exc_tb.tb_lineno if exc_tb is not None else "unknown"
     detailed_error = f"{error_type}{ex!s} - Error on line no: {tb_lineno}"
-    print(detailed_error)  # noqa: T201
+    logger.error(detailed_error)
 
     # Show generic error message to user (don't expose internal details)
     errors.append(error_type.strip())

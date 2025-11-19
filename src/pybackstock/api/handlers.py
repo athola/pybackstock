@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 import traceback
 from typing import Any
 
-from flask import current_app, render_template, request
+from flask import render_template, request
 
 from src.pybackstock.app import (
     FormAction,
     Grocery,
+    app,
     calculate_age_data,
     calculate_department_data,
     calculate_price_range_data,
@@ -26,7 +28,7 @@ from src.pybackstock.app import (
     render_index_template,
 )
 
-# Avoid circular import by using current_app instead of importing flask_app directly
+logger = logging.getLogger(__name__)
 
 
 def health_check() -> tuple[dict[str, str], int]:
@@ -149,7 +151,7 @@ def report_get() -> str:
             ]
 
         # Query all items from database - must be within app context for Connexion ASGI
-        with current_app.app_context():
+        with app.app_context():
             all_items = Grocery.query.all()
 
             # Always calculate summary metrics (shown in summary cards)
@@ -178,8 +180,7 @@ def report_get() -> str:
         exc_tb = sys.exc_info()[-1]
         tb_lineno: int | str = exc_tb.tb_lineno if exc_tb is not None else "unknown"
         error_msg = f"Report generation error: {ex!s} at line {tb_lineno}"
-        print(error_msg)  # noqa: T201
-        print(traceback.format_exc())  # noqa: T201
+        logger.exception(error_msg)
         raise
 
 
@@ -206,7 +207,7 @@ def report_data_get() -> tuple[dict[str, Any], int]:
             ]
 
         # Query all items from database - must be within app context for Connexion ASGI
-        with current_app.app_context():
+        with app.app_context():
             all_items = Grocery.query.all()
 
             # Always calculate summary metrics

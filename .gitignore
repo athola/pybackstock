@@ -144,3 +144,4 @@ Thumbs.db
 .playwright/
 playwright-report/
 test-results/
+coverage.json

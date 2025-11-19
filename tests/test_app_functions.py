@@ -72,11 +72,11 @@ def test_get_matching_items_wildcard(app: Flask, sample_grocery: None) -> None:
 
 
 @pytest.mark.unit
-def test_report_exception(app: Flask, capsys: Any) -> None:
+def test_report_exception(app: Flask, caplog: Any) -> None:
     """Test exception reporting.
 
     Verifies that:
-    1. Detailed errors are logged server-side (stdout)
+    1. Detailed errors are logged server-side (logger)
     2. Generic errors are shown to users (no internal details)
     """
     with app.app_context():
@@ -90,9 +90,8 @@ def test_report_exception(app: Flask, capsys: Any) -> None:
         assert "Test error" not in result[0]  # Security: don't expose details
 
         # Server-side log should contain full details
-        captured = capsys.readouterr()
-        assert "Test error" in captured.out
-        assert "line no:" in captured.out
+        assert "Test error" in caplog.text
+        assert "line no:" in caplog.text
 
 
 @pytest.mark.unit
