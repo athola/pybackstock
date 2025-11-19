@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import connexion
 from flask import request as flask_request
@@ -72,12 +72,16 @@ def create_app(config_name: str | None = None) -> FlaskApp:
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Configure app to trust Render.com's proxy headers (X-Forwarded-*)
-    flask_app.wsgi_app = ProxyFix(
-        flask_app.wsgi_app,
-        x_for=1,
-        x_proto=1,
-        x_host=1,
-        x_prefix=1,
+    # ProxyFix is a WSGI middleware that wraps the app
+    flask_app.wsgi_app = cast(
+        "Any",
+        ProxyFix(
+            flask_app.wsgi_app,
+            x_for=1,
+            x_proto=1,
+            x_host=1,
+            x_prefix=1,
+        ),
     )
 
     # Initialize security extensions
