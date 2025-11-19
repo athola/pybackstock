@@ -123,29 +123,23 @@ try:
         # resolver_error=500,  # Uncomment for debugging operation resolution failures
     )
     logger.info("OpenAPI spec loaded successfully!")
-    logger.info("API result: %s", api_result)
+    logger.debug("API result: %s", api_result)
 
-    # Verify routes were registered
-    registered_routes = [rule.rule for rule in flask_app.url_map.iter_rules()]
-    logger.debug("Registered routes: %s", registered_routes)
-
-    if "/health" not in registered_routes:
-        error_msg = (
-            f"Health check route /health was not registered! "
-            f"This means Connexion failed to load operations from openapi.yaml. "
-            f"Registered routes: {registered_routes}. "
-            f"Verify that src.pybackstock.api.handlers.health_check is importable."
-        )
-        logger.error(error_msg)
-        # Don't raise here - let the app start so we can investigate
-        # In a future version, we should raise an error to fail fast
+    # In Connexion 3.x, routes are registered in ASGI middleware, NOT in Flask's url_map
+    # This is expected behavior - Flask's url_map will only show Flask-specific routes
+    flask_routes = [rule.rule for rule in flask_app.url_map.iter_rules()]
+    logger.debug("Flask-specific routes in url_map: %s", flask_routes)
+    logger.info(
+        "Note: Connexion 3.x routes are in ASGI middleware layer. "
+        "Use connexion_app.test_client() to test, not flask_app.test_client()"
+    )
 except (FileNotFoundError, ValueError, KeyError) as e:
     logger.exception("Error loading OpenAPI spec")
     raise RuntimeError(f"Failed to load OpenAPI specification: {e}") from e
 
-# Export the underlying Flask app for ASGI compatibility with Uvicorn workers
-# Gunicorn with uvicorn.workers.UvicornWorker expects a Flask app, not a ConnexionApp
-app = flask_app
+# Export the Connexion app for ASGI deployment (Gunicorn with Uvicorn workers)
+# The connexion_app wraps Flask and handles routing via ASGI middleware
+app = connexion_app  # This is a connexion.FlaskApp instance
 
 
 def main() -> None:
