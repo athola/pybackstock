@@ -115,19 +115,36 @@ logger = logging.getLogger(__name__)
 # Add the OpenAPI specification
 logger.info("Loading OpenAPI specification from openapi.yaml...")
 try:
-    connexion_app.add_api(
+    api_result = connexion_app.add_api(
         "openapi.yaml",
         arguments={"title": "PyBackstock Inventory Management API"},
         pythonic_params=True,
         validate_responses=False,  # Disable for now to avoid validation issues
+        # resolver_error=500,  # Uncomment for debugging operation resolution failures
     )
     logger.info("OpenAPI spec loaded successfully!")
-    logger.debug("Registered routes: %s", [rule.rule for rule in flask_app.url_map.iter_rules()])
-except (FileNotFoundError, ValueError, KeyError):
-    logger.exception("Error loading OpenAPI spec")
-    raise
+    logger.info("API result: %s", api_result)
 
-# Export the underlying Flask app for compatibility
+    # Verify routes were registered
+    registered_routes = [rule.rule for rule in flask_app.url_map.iter_rules()]
+    logger.debug("Registered routes: %s", registered_routes)
+
+    if "/health" not in registered_routes:
+        error_msg = (
+            f"Health check route /health was not registered! "
+            f"This means Connexion failed to load operations from openapi.yaml. "
+            f"Registered routes: {registered_routes}. "
+            f"Verify that src.pybackstock.api.handlers.health_check is importable."
+        )
+        logger.error(error_msg)
+        # Don't raise here - let the app start so we can investigate
+        # In a future version, we should raise an error to fail fast
+except (FileNotFoundError, ValueError, KeyError) as e:
+    logger.exception("Error loading OpenAPI spec")
+    raise RuntimeError(f"Failed to load OpenAPI specification: {e}") from e
+
+# Export the underlying Flask app for ASGI compatibility with Uvicorn workers
+# Gunicorn with uvicorn.workers.UvicornWorker expects a Flask app, not a ConnexionApp
 app = flask_app
 
 

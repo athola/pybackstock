@@ -93,13 +93,17 @@ print("Migrations complete. Starting Gunicorn...")
 print("=" * 50)
 
 # Start Gunicorn
+# IMPORTANT: Using plain Flask app (not Connexion) because Connexion 3.x has route
+# registration issues. The Flask app in src.pybackstock.app has all routes defined
+# via @app.route decorators and works correctly.
+# TODO: Debug Connexion 3.x route registration in future PR
 # Use os.execvp to replace the current process with gunicorn
 port = os.environ.get("PORT", "10000")
 os.execvp(
     "gunicorn",
     [
         "gunicorn",
-        "src.pybackstock.connexion_app:app",  # Use connexion_app which wraps Flask with OpenAPI
+        "src.pybackstock.app:app",  # Use plain Flask app with @app.route decorators
         "--pythonpath",
         str(project_root),  # Add project root to Python path for module resolution
         "--bind",
