@@ -39,7 +39,7 @@ def health_check() -> tuple[dict[str, str], int]:
     return {"status": "healthy"}, 200
 
 
-def index_get() -> Response | str:
+def index_get() -> str:
     """Handle GET requests to the index page.
 
     Returns:
@@ -59,7 +59,7 @@ def index_get() -> Response | str:
     )
 
 
-def index_post() -> Response | str:
+def index_post() -> str:
     """Handle POST requests to the index page.
 
     Returns:

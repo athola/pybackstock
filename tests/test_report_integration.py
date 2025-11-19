@@ -6,6 +6,7 @@ through the full Connexion ASGI stack, which is how the application runs in prod
 
 import os
 from datetime import date
+from typing import Any
 
 import pytest
 
@@ -18,7 +19,7 @@ from src.pybackstock.connexion_app import create_app
 
 
 @pytest.fixture()
-def connexion_app():
+def connexion_app() -> Any:
     """Create a Connexion app for integration testing.
 
     Returns:
@@ -43,7 +44,7 @@ def connexion_app():
 
 
 @pytest.fixture()
-def connexion_client(connexion_app):
+def connexion_client(connexion_app: Any) -> Any:
     """Create a test client for the Connexion app.
 
     Args:
@@ -56,7 +57,7 @@ def connexion_client(connexion_app):
 
 
 @pytest.fixture()
-def sample_inventory_data(connexion_app):
+def sample_inventory_data(connexion_app: Any) -> None:
     """Create sample inventory data for testing.
 
     Args:
@@ -131,7 +132,7 @@ class TestReportGenerationIntegration:
     """Integration tests for /report endpoint through Connexion ASGI stack."""
 
     @pytest.mark.integration
-    def test_report_generation_returns_html(self, connexion_client, sample_inventory_data):
+    def test_report_generation_returns_html(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that /report endpoint returns valid HTML.
 
         Given: An inventory with sample data
@@ -146,7 +147,7 @@ class TestReportGenerationIntegration:
         assert "Inventory Analytics Report" in response_text or "<!DOCTYPE html>" in response_text
 
     @pytest.mark.integration
-    def test_report_with_empty_inventory(self, connexion_client):
+    def test_report_with_empty_inventory(self, connexion_client: Any) -> None:
         """Test that /report works with no inventory items.
 
         Given: An empty inventory database
@@ -162,7 +163,7 @@ class TestReportGenerationIntegration:
         assert "No Inventory Data Available" in response_text or "0" in response_text
 
     @pytest.mark.integration
-    def test_report_with_visualization_filters(self, connexion_client, sample_inventory_data):
+    def test_report_with_visualization_filters(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that /report respects visualization query parameters.
 
         Given: An inventory with sample data
@@ -177,7 +178,7 @@ class TestReportGenerationIntegration:
         assert "<!DOCTYPE html>" in response_text
 
     @pytest.mark.integration
-    def test_report_shows_summary_metrics(self, connexion_client, sample_inventory_data):
+    def test_report_shows_summary_metrics(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that report displays summary metrics correctly.
 
         Given: An inventory with 4 items totaling specific values
@@ -196,7 +197,7 @@ class TestReportGenerationIntegration:
         assert "Produce" in response_text or "Dairy" in response_text or "Meat" in response_text
 
     @pytest.mark.integration
-    def test_report_handles_special_characters_in_data(self, connexion_app, connexion_client):
+    def test_report_handles_special_characters_in_data(self, connexion_app: Any, connexion_client: Any) -> None:
         """Test that report handles special characters in inventory data.
 
         Given: Inventory items with special characters in descriptions
@@ -234,7 +235,7 @@ class TestReportDataAPIIntegration:
     """Integration tests for /api/report/data JSON endpoint."""
 
     @pytest.mark.integration
-    def test_report_data_returns_json(self, connexion_client, sample_inventory_data):
+    def test_report_data_returns_json(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that /api/report/data returns valid JSON.
 
         Given: An inventory with sample data
@@ -252,7 +253,7 @@ class TestReportDataAPIIntegration:
         assert data["item_count"] == 4
 
     @pytest.mark.integration
-    def test_report_data_with_empty_inventory(self, connexion_client):
+    def test_report_data_with_empty_inventory(self, connexion_client: Any) -> None:
         """Test that /api/report/data handles empty inventory.
 
         Given: An empty inventory database
@@ -267,7 +268,7 @@ class TestReportDataAPIIntegration:
         assert data["total_items"] == 0
 
     @pytest.mark.integration
-    def test_report_data_includes_all_metrics(self, connexion_client, sample_inventory_data):
+    def test_report_data_includes_all_metrics(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that /api/report/data includes all expected metrics.
 
         Given: An inventory with sample data
@@ -299,7 +300,9 @@ class TestReportDataAPIIntegration:
         assert "reorder_items" in data
 
     @pytest.mark.integration
-    def test_report_data_calculates_correct_stock_levels(self, connexion_client, sample_inventory_data):
+    def test_report_data_calculates_correct_stock_levels(
+        self, connexion_client: Any, sample_inventory_data: Any
+    ) -> None:
         """Test that stock level calculations are correct.
 
         Given: Inventory with 1 out-of-stock, 1 low-stock, 2 healthy items
@@ -323,7 +326,7 @@ class TestReportDataAPIIntegration:
         assert stock_levels["Healthy Stock"] >= 2
 
     @pytest.mark.integration
-    def test_report_data_filters_visualizations(self, connexion_client, sample_inventory_data):
+    def test_report_data_filters_visualizations(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that visualization filters work correctly.
 
         Given: An inventory with sample data
@@ -344,7 +347,9 @@ class TestReportDataAPIIntegration:
         assert "dept_counts" in data
 
     @pytest.mark.integration
-    def test_report_data_calculates_department_distribution(self, connexion_client, sample_inventory_data):
+    def test_report_data_calculates_department_distribution(
+        self, connexion_client: Any, sample_inventory_data: Any
+    ) -> None:
         """Test that department distribution is calculated correctly.
 
         Given: Inventory with items in Produce, Dairy, Meat, Bakery
@@ -367,7 +372,7 @@ class TestReportDataAPIIntegration:
         assert dept_counts["Bakery"] == 1
 
     @pytest.mark.integration
-    def test_report_data_identifies_top_value_items(self, connexion_client, sample_inventory_data):
+    def test_report_data_identifies_top_value_items(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that top value items are correctly identified.
 
         Given: Inventory with varying total values (price * quantity)
@@ -396,7 +401,7 @@ class TestReportDataAPIIntegration:
             assert top_value_items[0]["description"] in ["Fresh Apples", "Premium Steak"]
 
     @pytest.mark.integration
-    def test_report_data_identifies_reorder_items(self, connexion_client, sample_inventory_data):
+    def test_report_data_identifies_reorder_items(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that items needing reorder are correctly identified.
 
         Given: Inventory with items below reorder point
@@ -424,7 +429,7 @@ class TestReportRobustness:
     """Tests for report generation robustness and error handling."""
 
     @pytest.mark.integration
-    def test_report_handles_missing_data_gracefully(self, connexion_app, connexion_client):
+    def test_report_handles_missing_data_gracefully(self, connexion_app: Any, connexion_client: Any) -> None:
         """Test that report handles items with missing optional fields.
 
         Given: Inventory items with None values for optional fields
@@ -456,7 +461,7 @@ class TestReportRobustness:
         assert "text/html" in response.headers.get("Content-Type", "")
 
     @pytest.mark.integration
-    def test_report_api_handles_missing_data_gracefully(self, connexion_app, connexion_client):
+    def test_report_api_handles_missing_data_gracefully(self, connexion_app: Any, connexion_client: Any) -> None:
         """Test that report API handles items with missing optional fields.
 
         Given: Inventory items with None values for optional fields
@@ -490,7 +495,7 @@ class TestReportRobustness:
         assert "dept_counts" in data
 
     @pytest.mark.integration
-    def test_concurrent_report_requests(self, connexion_client, sample_inventory_data):
+    def test_concurrent_report_requests(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that multiple concurrent report requests work correctly.
 
         Given: An inventory with sample data
@@ -505,7 +510,7 @@ class TestReportRobustness:
             assert "text/html" in response.headers.get("Content-Type", "")
 
     @pytest.mark.integration
-    def test_report_consistency_across_requests(self, connexion_client, sample_inventory_data):
+    def test_report_consistency_across_requests(self, connexion_client: Any, sample_inventory_data: Any) -> None:
         """Test that report data is consistent across multiple requests.
 
         Given: An inventory with sample data
