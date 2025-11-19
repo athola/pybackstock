@@ -6,7 +6,7 @@ import sys
 import traceback
 from typing import Any
 
-from flask import render_template, request
+from flask import current_app, render_template, request
 
 from src.pybackstock.app import (
     FormAction,
@@ -148,30 +148,31 @@ def report_get() -> str:
                 "reorder_table",
             ]
 
-        # Query all items from database
-        all_items = Grocery.query.all()
+        # Query all items from database - must be within app context for Connexion ASGI
+        with current_app.app_context():
+            all_items = Grocery.query.all()
 
-        # Always calculate summary metrics (shown in summary cards)
-        summary_data = calculate_summary_metrics(all_items)
+            # Always calculate summary metrics (shown in summary cards)
+            summary_data = calculate_summary_metrics(all_items)
 
-        # Calculate data for selected visualizations
-        viz_data = _calculate_visualizations(selected_viz, all_items)
+            # Calculate data for selected visualizations
+            viz_data = _calculate_visualizations(selected_viz, all_items)
 
-        # Merge summary data and visualization data
-        template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
+            # Merge summary data and visualization data
+            template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
 
-        # Provide empty defaults for visualizations that weren't selected
-        # This prevents template errors if a visualization references missing data
-        template_data.setdefault("stock_levels", {})
-        template_data.setdefault("dept_counts", {})
-        template_data.setdefault("age_distribution", {})
-        template_data.setdefault("price_ranges", {})
-        template_data.setdefault("shelf_life_counts", {})
-        template_data.setdefault("top_value_items", [])
-        template_data.setdefault("top_items", [])
-        template_data.setdefault("reorder_items", [])
+            # Provide empty defaults for visualizations that weren't selected
+            # This prevents template errors if a visualization references missing data
+            template_data.setdefault("stock_levels", {})
+            template_data.setdefault("dept_counts", {})
+            template_data.setdefault("age_distribution", {})
+            template_data.setdefault("price_ranges", {})
+            template_data.setdefault("shelf_life_counts", {})
+            template_data.setdefault("top_value_items", [])
+            template_data.setdefault("top_items", [])
+            template_data.setdefault("reorder_items", [])
 
-        return render_template("report.html", **template_data)
+            return render_template("report.html", **template_data)
     except Exception as ex:
         # Log detailed error for debugging
         exc_tb = sys.exc_info()[-1]
@@ -204,32 +205,33 @@ def report_data_get() -> tuple[dict[str, Any], int]:
                 "reorder_table",
             ]
 
-        # Query all items from database
-        all_items = Grocery.query.all()
+        # Query all items from database - must be within app context for Connexion ASGI
+        with current_app.app_context():
+            all_items = Grocery.query.all()
 
-        # Always calculate summary metrics
-        summary_data = calculate_summary_metrics(all_items)
+            # Always calculate summary metrics
+            summary_data = calculate_summary_metrics(all_items)
 
-        # Calculate data for selected visualizations
-        viz_data = _calculate_visualizations(selected_viz, all_items)
+            # Calculate data for selected visualizations
+            viz_data = _calculate_visualizations(selected_viz, all_items)
 
-        # Merge all data
-        response_data = {
-            **summary_data,
-            **viz_data,
-            "selected_viz": selected_viz,
-            "item_count": len(all_items),
-        }
+            # Merge all data
+            response_data = {
+                **summary_data,
+                **viz_data,
+                "selected_viz": selected_viz,
+                "item_count": len(all_items),
+            }
 
-        # Provide empty defaults
-        response_data.setdefault("stock_levels", {})
-        response_data.setdefault("dept_counts", {})
-        response_data.setdefault("age_distribution", {})
-        response_data.setdefault("price_ranges", {})
-        response_data.setdefault("shelf_life_counts", {})
-        response_data.setdefault("top_value_items", [])
-        response_data.setdefault("top_items", [])
-        response_data.setdefault("reorder_items", [])
+            # Provide empty defaults
+            response_data.setdefault("stock_levels", {})
+            response_data.setdefault("dept_counts", {})
+            response_data.setdefault("age_distribution", {})
+            response_data.setdefault("price_ranges", {})
+            response_data.setdefault("shelf_life_counts", {})
+            response_data.setdefault("top_value_items", [])
+            response_data.setdefault("top_items", [])
+            response_data.setdefault("reorder_items", [])
     except (AttributeError, ValueError, KeyError, TypeError) as ex:
         # Return detailed error information
         exc_tb = sys.exc_info()[-1]
