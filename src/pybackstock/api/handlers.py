@@ -7,12 +7,11 @@ import sys
 import traceback
 from typing import Any
 
-from flask import render_template, request
+from flask import Response, make_response, render_template, request
 
 from src.pybackstock.app import (
     FormAction,
     Grocery,
-    app,
     calculate_age_data,
     calculate_department_data,
     calculate_price_range_data,
@@ -40,7 +39,7 @@ def health_check() -> tuple[dict[str, str], int]:
     return {"status": "healthy"}, 200
 
 
-def index_get() -> str:
+def index_get() -> Response | str:
     """Handle GET requests to the index page.
 
     Returns:
@@ -60,7 +59,7 @@ def index_get() -> str:
     )
 
 
-def index_post() -> str:
+def index_post() -> Response | str:
     """Handle POST requests to the index page.
 
     Returns:
@@ -128,11 +127,11 @@ def _calculate_visualizations(selected_viz: list[str], all_items: list[Any]) -> 
     return viz_data
 
 
-def report_get() -> str:
+def report_get() -> Response:
     """Generate and display inventory analytics report.
 
     Returns:
-        Rendered HTML template.
+        Flask Response object with rendered HTML template.
     """
     try:
         # Get selected visualizations from query parameters
@@ -150,31 +149,35 @@ def report_get() -> str:
                 "reorder_table",
             ]
 
-        # Query all items from database - must be within app context for Connexion ASGI
-        with app.app_context():
-            all_items = Grocery.query.all()
+        # Query all items from database
+        # No need for app_context() - Connexion already provides Flask app context
+        all_items = Grocery.query.all()
 
-            # Always calculate summary metrics (shown in summary cards)
-            summary_data = calculate_summary_metrics(all_items)
+        # Always calculate summary metrics (shown in summary cards)
+        summary_data = calculate_summary_metrics(all_items)
 
-            # Calculate data for selected visualizations
-            viz_data = _calculate_visualizations(selected_viz, all_items)
+        # Calculate data for selected visualizations
+        viz_data = _calculate_visualizations(selected_viz, all_items)
 
-            # Merge summary data and visualization data
-            template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
+        # Merge summary data and visualization data
+        template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
 
-            # Provide empty defaults for visualizations that weren't selected
-            # This prevents template errors if a visualization references missing data
-            template_data.setdefault("stock_levels", {})
-            template_data.setdefault("dept_counts", {})
-            template_data.setdefault("age_distribution", {})
-            template_data.setdefault("price_ranges", {})
-            template_data.setdefault("shelf_life_counts", {})
-            template_data.setdefault("top_value_items", [])
-            template_data.setdefault("top_items", [])
-            template_data.setdefault("reorder_items", [])
+        # Provide empty defaults for visualizations that weren't selected
+        # This prevents template errors if a visualization references missing data
+        template_data.setdefault("stock_levels", {})
+        template_data.setdefault("dept_counts", {})
+        template_data.setdefault("age_distribution", {})
+        template_data.setdefault("price_ranges", {})
+        template_data.setdefault("shelf_life_counts", {})
+        template_data.setdefault("top_value_items", [])
+        template_data.setdefault("top_items", [])
+        template_data.setdefault("reorder_items", [])
 
-            return render_template("report.html", **template_data)
+        # Render template and explicitly set content type for Connexion
+        html_content = render_template("report.html", **template_data)
+        response = make_response(html_content, 200)
+        response.headers["Content-Type"] = "text/html; charset=utf-8"
+        return response  # noqa: TRY300
     except Exception as ex:
         # Log detailed error for debugging
         exc_tb = sys.exc_info()[-1]
@@ -206,33 +209,33 @@ def report_data_get() -> tuple[dict[str, Any], int]:
                 "reorder_table",
             ]
 
-        # Query all items from database - must be within app context for Connexion ASGI
-        with app.app_context():
-            all_items = Grocery.query.all()
+        # Query all items from database
+        # No need for app_context() - Connexion already provides Flask app context
+        all_items = Grocery.query.all()
 
-            # Always calculate summary metrics
-            summary_data = calculate_summary_metrics(all_items)
+        # Always calculate summary metrics
+        summary_data = calculate_summary_metrics(all_items)
 
-            # Calculate data for selected visualizations
-            viz_data = _calculate_visualizations(selected_viz, all_items)
+        # Calculate data for selected visualizations
+        viz_data = _calculate_visualizations(selected_viz, all_items)
 
-            # Merge all data
-            response_data = {
-                **summary_data,
-                **viz_data,
-                "selected_viz": selected_viz,
-                "item_count": len(all_items),
-            }
+        # Merge all data
+        response_data = {
+            **summary_data,
+            **viz_data,
+            "selected_viz": selected_viz,
+            "item_count": len(all_items),
+        }
 
-            # Provide empty defaults
-            response_data.setdefault("stock_levels", {})
-            response_data.setdefault("dept_counts", {})
-            response_data.setdefault("age_distribution", {})
-            response_data.setdefault("price_ranges", {})
-            response_data.setdefault("shelf_life_counts", {})
-            response_data.setdefault("top_value_items", [])
-            response_data.setdefault("top_items", [])
-            response_data.setdefault("reorder_items", [])
+        # Provide empty defaults
+        response_data.setdefault("stock_levels", {})
+        response_data.setdefault("dept_counts", {})
+        response_data.setdefault("age_distribution", {})
+        response_data.setdefault("price_ranges", {})
+        response_data.setdefault("shelf_life_counts", {})
+        response_data.setdefault("top_value_items", [])
+        response_data.setdefault("top_items", [])
+        response_data.setdefault("reorder_items", [])
     except (AttributeError, ValueError, KeyError, TypeError) as ex:
         # Return detailed error information
         exc_tb = sys.exc_info()[-1]

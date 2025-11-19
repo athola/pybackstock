@@ -5,7 +5,7 @@ which are called by Connexion when routes are invoked.
 """
 
 import pytest
-from flask import Flask
+from flask import Flask, Response
 
 from src.pybackstock import Grocery, db
 from src.pybackstock.api.handlers import (
@@ -222,16 +222,21 @@ class TestReportGetHandler:
         with app.test_request_context("/report"):
             result = report_get()
 
-            assert isinstance(result, str)
-            assert "Inventory Analytics Report" in result
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+            assert "text/html" in result.headers.get("Content-Type", "")
+            html_content = result.get_data(as_text=True)
+            assert "Inventory Analytics Report" in html_content
 
     def test_report_get_with_empty_database(self, app: Flask) -> None:
         """Test report_get with empty database."""
         with app.test_request_context("/report"):
             result = report_get()
 
-            assert isinstance(result, str)
-            assert "No Inventory Data Available" in result
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+            html_content = result.get_data(as_text=True)
+            assert "No Inventory Data Available" in html_content
 
     @pytest.mark.usefixtures("sample_grocery")
     def test_report_get_with_selected_visualizations(self, app: Flask) -> None:
@@ -239,8 +244,10 @@ class TestReportGetHandler:
         with app.test_request_context("/report?viz=stock_health&viz=department"):
             result = report_get()
 
-            assert isinstance(result, str)
-            assert "Inventory Analytics Report" in result
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+            html_content = result.get_data(as_text=True)
+            assert "Inventory Analytics Report" in html_content
 
     @pytest.mark.usefixtures("sample_grocery")
     def test_report_get_defaults_to_all_visualizations(self, app: Flask) -> None:
@@ -248,9 +255,11 @@ class TestReportGetHandler:
         with app.test_request_context("/report"):
             result = report_get()
 
-            assert isinstance(result, str)
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+            html_content = result.get_data(as_text=True)
             # Should include all major visualizations
-            assert "Stock Health" in result or "Inventory Analytics" in result
+            assert "Stock Health" in html_content or "Inventory Analytics" in html_content
 
 
 class TestReportDataGetHandler:
