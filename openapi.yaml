@@ -31,6 +31,38 @@ paths:
                     type: string
                     example: healthy
 
+  /api/diagnostic:
+    get:
+      summary: System diagnostic endpoint
+      description: Comprehensive system diagnostic to identify configuration and runtime issues
+      operationId: src.pybackstock.api.handlers.diagnostic_check
+      tags:
+        - monitoring
+        - debug
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  checks:
+                    type: object
+        '500':
+          description: System has issues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  checks:
+                    type: object
+
   /:
     get:
       summary: Main inventory page

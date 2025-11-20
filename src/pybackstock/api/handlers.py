@@ -38,6 +38,83 @@ def health_check() -> tuple[dict[str, str], int]:
     return {"status": "healthy"}, 200
 
 
+def diagnostic_check() -> tuple[dict[str, Any], int]:
+    """Diagnostic endpoint to check system status and configuration.
+
+    Returns:
+        JSON response with diagnostic information.
+    """
+    import os
+    from pathlib import Path
+
+    from flask import current_app
+
+    diagnostics: dict[str, Any] = {
+        "status": "ok",
+        "checks": {},
+    }
+
+    # Check database connection
+    try:
+        Grocery.query.count()
+        diagnostics["checks"]["database"] = {"status": "ok", "message": "Database connection successful"}
+    except Exception as ex:
+        diagnostics["checks"]["database"] = {"status": "error", "message": f"Database error: {ex!s}"}
+        diagnostics["status"] = "degraded"
+
+    # Check template folder
+    try:
+        template_folder = current_app.template_folder
+        if template_folder and Path(template_folder).exists():
+            report_template = Path(template_folder) / "report.html"
+            if report_template.exists():
+                diagnostics["checks"]["templates"] = {
+                    "status": "ok",
+                    "template_folder": str(template_folder),
+                    "report_template_exists": True,
+                }
+            else:
+                diagnostics["checks"]["templates"] = {
+                    "status": "error",
+                    "template_folder": str(template_folder),
+                    "report_template_exists": False,
+                    "message": "report.html not found",
+                }
+                diagnostics["status"] = "degraded"
+        else:
+            diagnostics["checks"]["templates"] = {
+                "status": "error",
+                "template_folder": str(template_folder) if template_folder else None,
+                "message": "Template folder not found or not set",
+            }
+            diagnostics["status"] = "degraded"
+    except Exception as ex:
+        diagnostics["checks"]["templates"] = {"status": "error", "message": f"Template check failed: {ex!s}"}
+        diagnostics["status"] = "degraded"
+
+    # Check app configuration
+    diagnostics["checks"]["config"] = {
+        "status": "ok",
+        "app_settings": os.environ.get("APP_SETTINGS", "not set"),
+        "debug_mode": current_app.config.get("DEBUG", False),
+        "testing_mode": current_app.config.get("TESTING", False),
+    }
+
+    # Check calculation functions
+    try:
+        test_items: list[Any] = []
+        calculate_summary_metrics(test_items)
+        diagnostics["checks"]["calculations"] = {"status": "ok", "message": "Calculation functions working"}
+    except Exception as ex:
+        diagnostics["checks"]["calculations"] = {
+            "status": "error",
+            "message": f"Calculation functions failed: {ex!s}",
+        }
+        diagnostics["status"] = "degraded"
+
+    return diagnostics, 200 if diagnostics["status"] == "ok" else 500
+
+
 def index_get() -> str:
     """Handle GET requests to the index page.
 
@@ -135,11 +212,11 @@ def _calculate_visualizations(selected_viz: list[str], all_items: list[Any]) -> 
     return viz_data
 
 
-def report_get() -> Response:
+def report_get() -> Response | tuple[dict[str, Any], int]:
     """Generate and display inventory analytics report.
 
     Returns:
-        Flask Response object with rendered HTML template.
+        Flask Response object with rendered HTML template or error dict with status code.
     """
     try:
         # Get selected visualizations from query parameters
@@ -159,13 +236,40 @@ def report_get() -> Response:
 
         # Query all items from database
         # No need for app_context() - Connexion already provides Flask app context
-        all_items = Grocery.query.all()
+        try:
+            all_items = Grocery.query.all()
+        except Exception as db_ex:
+            logger.exception("Database query failed in report generation")
+            return {
+                "type": "database_error",
+                "title": "Database Error",
+                "detail": f"Failed to query inventory database: {db_ex!s}",
+                "status": 500,
+            }, 500
 
         # Always calculate summary metrics (shown in summary cards)
-        summary_data = calculate_summary_metrics(all_items)
+        try:
+            summary_data = calculate_summary_metrics(all_items)
+        except Exception as calc_ex:
+            logger.exception("Failed to calculate summary metrics")
+            return {
+                "type": "calculation_error",
+                "title": "Calculation Error",
+                "detail": f"Failed to calculate summary metrics: {calc_ex!s}",
+                "status": 500,
+            }, 500
 
         # Calculate data for selected visualizations
-        viz_data = _calculate_visualizations(selected_viz, all_items)
+        try:
+            viz_data = _calculate_visualizations(selected_viz, all_items)
+        except Exception as viz_ex:
+            logger.exception("Failed to calculate visualization data")
+            return {
+                "type": "visualization_error",
+                "title": "Visualization Error",
+                "detail": f"Failed to calculate visualization data: {viz_ex!s}",
+                "status": 500,
+            }, 500
 
         # Merge summary data and visualization data
         template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
@@ -182,17 +286,33 @@ def report_get() -> Response:
         template_data.setdefault("reorder_items", [])
 
         # Render template and explicitly set content type for Connexion
-        html_content = render_template("report.html", **template_data)
+        try:
+            html_content = render_template("report.html", **template_data)
+        except Exception as template_ex:
+            logger.exception("Template rendering failed")
+            return {
+                "type": "template_error",
+                "title": "Template Rendering Error",
+                "detail": f"Failed to render report template: {template_ex!s}",
+                "status": 500,
+            }, 500
+
         response = make_response(html_content, 200)
         response.headers["Content-Type"] = "text/html; charset=utf-8"
         return response  # noqa: TRY300
     except Exception as ex:
-        # Log detailed error for debugging
+        # Catch-all for any unexpected errors
         exc_tb = sys.exc_info()[-1]
         tb_lineno: int | str = exc_tb.tb_lineno if exc_tb is not None else "unknown"
-        error_msg = f"Report generation error: {ex!s} at line {tb_lineno}"
+        error_msg = f"Unexpected error in report generation at line {tb_lineno}: {ex!s}"
         logger.exception(error_msg)
-        raise
+        return {
+            "type": "internal_error",
+            "title": "Internal Server Error",
+            "detail": error_msg,
+            "status": 500,
+            "traceback": traceback.format_exc(),
+        }, 500
 
 
 def report_data_get() -> tuple[dict[str, Any], int]:
