@@ -4,7 +4,9 @@ These tests start an actual server process to simulate production environment
 and verify that report generation works correctly with the full stack.
 """
 
+import concurrent.futures
 import os
+import pathlib
 import time
 from datetime import date
 from multiprocessing import Process
@@ -109,8 +111,6 @@ def live_server() -> Any:
         server_process.kill()
 
     # Remove test database
-    import pathlib
-
     db_path = pathlib.Path("test_e2e.db")
     if db_path.exists():
         db_path.unlink()
@@ -191,7 +191,6 @@ class TestReportGenerationE2E:
         Args:
             live_server: Base URL of the live server.
         """
-        import concurrent.futures
 
         def make_request() -> int:
             response = requests.get(f"{live_server}/report", timeout=10)

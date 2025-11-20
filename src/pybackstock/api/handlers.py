@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import traceback
+from pathlib import Path
 from typing import Any
 
-from flask import Response, make_response, render_template, request
+from flask import Response, current_app, make_response, render_template, request
 
 from src.pybackstock.app import (
     FormAction,
@@ -44,11 +46,6 @@ def diagnostic_check() -> tuple[dict[str, Any], int]:
     Returns:
         JSON response with diagnostic information.
     """
-    import os
-    from pathlib import Path
-
-    from flask import current_app
-
     diagnostics: dict[str, Any] = {
         "status": "ok",
         "checks": {},
@@ -58,7 +55,7 @@ def diagnostic_check() -> tuple[dict[str, Any], int]:
     try:
         Grocery.query.count()
         diagnostics["checks"]["database"] = {"status": "ok", "message": "Database connection successful"}
-    except Exception as ex:
+    except (OSError, RuntimeError, ValueError, AttributeError) as ex:
         diagnostics["checks"]["database"] = {"status": "error", "message": f"Database error: {ex!s}"}
         diagnostics["status"] = "degraded"
 
@@ -88,7 +85,7 @@ def diagnostic_check() -> tuple[dict[str, Any], int]:
                 "message": "Template folder not found or not set",
             }
             diagnostics["status"] = "degraded"
-    except Exception as ex:
+    except (OSError, RuntimeError, ValueError, AttributeError) as ex:
         diagnostics["checks"]["templates"] = {"status": "error", "message": f"Template check failed: {ex!s}"}
         diagnostics["status"] = "degraded"
 
@@ -105,7 +102,7 @@ def diagnostic_check() -> tuple[dict[str, Any], int]:
         test_items: list[Any] = []
         calculate_summary_metrics(test_items)
         diagnostics["checks"]["calculations"] = {"status": "ok", "message": "Calculation functions working"}
-    except Exception as ex:
+    except (ValueError, TypeError, AttributeError, KeyError) as ex:
         diagnostics["checks"]["calculations"] = {
             "status": "error",
             "message": f"Calculation functions failed: {ex!s}",
