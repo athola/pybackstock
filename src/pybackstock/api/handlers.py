@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -29,6 +30,17 @@ from src.pybackstock.app import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _make_json_error_response(error_dict: dict[str, Any], status_code: int) -> Response:
+    """Create a JSON error response with explicit content type.
+
+    This is needed because Connexion requires explicit content type when
+    multiple response content types are defined in the OpenAPI spec.
+    """
+    response = make_response(json.dumps(error_dict), status_code)
+    response.headers["Content-Type"] = "application/json"
+    return response
 
 
 def health_check() -> tuple[dict[str, str], int]:
@@ -209,11 +221,11 @@ def _calculate_visualizations(selected_viz: list[str], all_items: list[Any]) -> 
     return viz_data
 
 
-def report_get() -> Response | tuple[dict[str, Any], int]:
+def report_get() -> Response:
     """Generate and display inventory analytics report.
 
     Returns:
-        Flask Response object with rendered HTML template or error dict with status code.
+        Flask Response object with rendered HTML template or JSON error response.
     """
     try:
         # Get selected visualizations from query parameters
@@ -237,36 +249,36 @@ def report_get() -> Response | tuple[dict[str, Any], int]:
             all_items = Grocery.query.all()
         except Exception as db_ex:
             logger.exception("Database query failed in report generation")
-            return {
+            return _make_json_error_response({
                 "type": "database_error",
                 "title": "Database Error",
                 "detail": f"Failed to query inventory database: {db_ex!s}",
                 "status": 500,
-            }, 500
+            }, 500)
 
         # Always calculate summary metrics (shown in summary cards)
         try:
             summary_data = calculate_summary_metrics(all_items)
         except Exception as calc_ex:
             logger.exception("Failed to calculate summary metrics")
-            return {
+            return _make_json_error_response({
                 "type": "calculation_error",
                 "title": "Calculation Error",
                 "detail": f"Failed to calculate summary metrics: {calc_ex!s}",
                 "status": 500,
-            }, 500
+            }, 500)
 
         # Calculate data for selected visualizations
         try:
             viz_data = _calculate_visualizations(selected_viz, all_items)
         except Exception as viz_ex:
             logger.exception("Failed to calculate visualization data")
-            return {
+            return _make_json_error_response({
                 "type": "visualization_error",
                 "title": "Visualization Error",
                 "detail": f"Failed to calculate visualization data: {viz_ex!s}",
                 "status": 500,
-            }, 500
+            }, 500)
 
         # Merge summary data and visualization data
         template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
@@ -287,12 +299,12 @@ def report_get() -> Response | tuple[dict[str, Any], int]:
             html_content = render_template("report.html", **template_data)
         except Exception as template_ex:
             logger.exception("Template rendering failed")
-            return {
+            return _make_json_error_response({
                 "type": "template_error",
                 "title": "Template Rendering Error",
                 "detail": f"Failed to render report template: {template_ex!s}",
                 "status": 500,
-            }, 500
+            }, 500)
 
         response = make_response(html_content, 200)
         response.headers["Content-Type"] = "text/html; charset=utf-8"
@@ -303,13 +315,13 @@ def report_get() -> Response | tuple[dict[str, Any], int]:
         tb_lineno: int | str = exc_tb.tb_lineno if exc_tb is not None else "unknown"
         error_msg = f"Unexpected error in report generation at line {tb_lineno}: {ex!s}"
         logger.exception(error_msg)
-        return {
+        return _make_json_error_response({
             "type": "internal_error",
             "title": "Internal Server Error",
             "detail": error_msg,
             "status": 500,
             "traceback": traceback.format_exc(),
-        }, 500
+        }, 500)
 
 
 def report_data_get() -> tuple[dict[str, Any], int]:
