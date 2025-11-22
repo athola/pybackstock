@@ -84,9 +84,9 @@ try:
     # Run migrations
     with app.app_context():
         flask_migrate_upgrade()
-        print("✓ Database migrations completed successfully")
+        print("[OK] Database migrations completed successfully")
 except Exception as e:
-    print(f"✗ Migration failed: {e}", file=sys.stderr)
+    print(f"[ERROR] Migration failed: {e}", file=sys.stderr)
     sys.exit(1)
 
 print("Migrations complete. Starting Gunicorn...")
