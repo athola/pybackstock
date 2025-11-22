@@ -32,8 +32,8 @@ flask_app = connexion_app.app
 flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test_production.db"
 flask_app.config["TESTING"] = True  # Disable HTTPS requirements for test
 
-print("   ✓ Connexion app created")
-print(f"   ✓ Using database: {flask_app.config['SQLALCHEMY_DATABASE_URI']}")
+print("   [OK] Connexion app created")
+print(f"   [OK] Using database: {flask_app.config['SQLALCHEMY_DATABASE_URI']}")
 print()
 
 # Setup database
@@ -91,7 +91,7 @@ with flask_app.app_context():
         db.session.add(item)
     db.session.commit()
 
-print(f"   ✓ Created test database with {len(items)} items")
+print(f"   [OK] Created test database with {len(items)} items")
 print()
 
 # Create test client that simulates production requests
@@ -258,7 +258,7 @@ print("4. Cleanup...")
 db_path = Path("test_production.db")
 if db_path.exists():
     db_path.unlink()
-print("   ✓ Test database removed")
+print("   [OK] Test database removed")
 print()
 
 print("=" * 80)

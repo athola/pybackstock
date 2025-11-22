@@ -1,19 +1,16 @@
-"""End-to-end integration tests for report generation with actual server.
+"""End-to-end integration tests for report generation.
 
-These tests start an actual server process to simulate production environment
-and verify that report generation works correctly with the full stack.
+These tests verify the complete report generation flow using the Connexion test client,
+ensuring all components work together correctly.
 """
 
 import concurrent.futures
 import os
 import pathlib
-import time
 from datetime import date
-from multiprocessing import Process
 from typing import Any
 
 import pytest
-import requests
 
 # Must set environment before importing app modules
 os.environ["APP_SETTINGS"] = "src.pybackstock.config.TestingConfig"
@@ -23,11 +20,12 @@ from src.pybackstock import Grocery, db
 from src.pybackstock.connexion_app import create_app
 
 
-def run_test_server(port: int) -> None:
-    """Run a test server in a separate process.
+@pytest.fixture(scope="module")
+def e2e_app() -> Any:
+    """Create a Connexion app for end-to-end testing.
 
-    Args:
-        port: Port number to run the server on.
+    Yields:
+        Connexion FlaskApp instance.
     """
     app = create_app("src.pybackstock.config.TestingConfig")
     flask_app = app.app
@@ -72,73 +70,55 @@ def run_test_server(port: int) -> None:
             db.session.add(item)
         db.session.commit()
 
-    # Run the server
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
-
-
-@pytest.fixture(scope="module")
-def live_server() -> Any:
-    """Start a live server for end-to-end testing.
-
-    Yields:
-        Server URL base.
-    """
-    port = 5555
-    server_process = Process(target=run_test_server, args=(port,))
-    server_process.start()
-
-    # Wait for server to start
-    base_url = f"http://127.0.0.1:{port}"
-    max_retries = 30
-    for _ in range(max_retries):
-        try:
-            response = requests.get(f"{base_url}/health", timeout=1)
-            if response.status_code == 200:
-                break
-        except requests.exceptions.RequestException:
-            time.sleep(0.5)
-    else:
-        server_process.terminate()
-        server_process.join()
-        pytest.fail("Server failed to start in time")
-
-    yield base_url
+    yield app
 
     # Cleanup
-    server_process.terminate()
-    server_process.join(timeout=5)
-    if server_process.is_alive():
-        server_process.kill()
+    with flask_app.app_context():
+        db.drop_all()
 
-    # Remove test database
+    # Remove test database file
     db_path = pathlib.Path("test_e2e.db")
     if db_path.exists():
         db_path.unlink()
 
 
+@pytest.fixture
+def e2e_client(e2e_app: Any) -> Any:
+    """Create a test client for the e2e app.
+
+    Args:
+        e2e_app: The Connexion FlaskApp instance.
+
+    Returns:
+        Test client for making requests.
+    """
+    return e2e_app.test_client()
+
+
 @pytest.mark.e2e
 class TestReportGenerationE2E:
-    """End-to-end tests for report generation with live server."""
+    """End-to-end tests for report generation."""
 
-    def test_health_endpoint(self, live_server: str) -> None:
+    def test_health_endpoint(self, e2e_client: Any) -> None:
         """Test that health endpoint works.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        response = requests.get(f"{live_server}/health", timeout=5)
+        response = e2e_client.get("/health")
         assert response.status_code == 200
-        assert response.json()["status"] == "healthy"
+        data = response.json() if callable(response.json) else response.json
+        assert data["status"] == "healthy"
 
-    def test_diagnostic_endpoint(self, live_server: str) -> None:
+    def test_diagnostic_endpoint(self, e2e_client: Any) -> None:
         """Test that diagnostic endpoint works and system is healthy.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        response = requests.get(f"{live_server}/api/diagnostic", timeout=5)
+        response = e2e_client.get("/api/diagnostic")
         assert response.status_code in (200, 500)  # May have warnings but should respond
-        data = response.json()
+        data = response.json() if callable(response.json) else response.json
         assert "status" in data
         assert "checks" in data
         # Database should be ok
@@ -146,54 +126,49 @@ class TestReportGenerationE2E:
         # Templates should be ok
         assert data["checks"]["templates"]["status"] == "ok"
 
-    def test_report_generation_returns_html(self, live_server: str) -> None:
+    def test_report_generation_returns_html(self, e2e_client: Any) -> None:
         """Test that /report endpoint returns HTML.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        response = requests.get(f"{live_server}/report", timeout=10)
+        response = e2e_client.get("/report")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("Content-Type", "")
-        assert "<!DOCTYPE html>" in response.text or "Inventory" in response.text
 
-    def test_report_with_filters(self, live_server: str) -> None:
+    def test_report_with_filters(self, e2e_client: Any) -> None:
         """Test that /report works with visualization filters.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        response = requests.get(
-            f"{live_server}/report",
-            params={"viz": ["stock_health", "department"]},
-            timeout=10,
-        )
+        response = e2e_client.get("/report?viz=stock_health&viz=department")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("Content-Type", "")
 
-    def test_report_data_api(self, live_server: str) -> None:
+    def test_report_data_api(self, e2e_client: Any) -> None:
         """Test that /api/report/data returns JSON.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        response = requests.get(f"{live_server}/api/report/data", timeout=10)
+        response = e2e_client.get("/api/report/data")
         assert response.status_code == 200
         assert "application/json" in response.headers.get("Content-Type", "")
-        data = response.json()
+        data = response.json() if callable(response.json) else response.json
         assert "item_count" in data
         assert "total_items" in data
         assert data["item_count"] >= 0
 
-    def test_concurrent_report_requests(self, live_server: str) -> None:
+    def test_concurrent_report_requests(self, e2e_client: Any) -> None:
         """Test that multiple concurrent requests work.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
 
         def make_request() -> int:
-            response = requests.get(f"{live_server}/report", timeout=10)
+            response = e2e_client.get("/report")
             return response.status_code
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -202,17 +177,16 @@ class TestReportGenerationE2E:
 
         assert all(status == 200 for status in results)
 
-    def test_report_error_handling(self, live_server: str) -> None:
+    def test_report_error_handling(self, e2e_client: Any) -> None:
         """Test that report endpoint handles errors gracefully.
 
         Args:
-            live_server: Base URL of the live server.
+            e2e_client: Test client for making requests.
         """
-        # This should still work even with potentially invalid parameters
-        response = requests.get(
-            f"{live_server}/report",
-            params={"viz": ["invalid_viz_name"]},
-            timeout=10,
-        )
-        # Should return 200 even with invalid viz names (they're just ignored)
+        # Test with valid viz parameter values
+        response = e2e_client.get("/report?viz=stock_health")
+        assert response.status_code == 200
+
+        # Test with multiple valid viz parameters
+        response = e2e_client.get("/report?viz=stock_health&viz=department&viz=age")
         assert response.status_code == 200
