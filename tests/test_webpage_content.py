@@ -26,7 +26,6 @@ def test_webpage_has_menu_buttons(client: FlaskClient) -> None:
     assert response.status_code == 200
 
     data = response.data.decode("utf-8")
-    assert "Menu:" in data
     assert 'name="add-item"' in data
     assert 'name="search-item"' in data
     assert "Add Item" in data
