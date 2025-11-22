@@ -1,0 +1,111 @@
+# Pre-commit configuration
+# Install: uv add --dev pre-commit && uv run pre-commit install
+# Run manually: uv run pre-commit run --all-files
+# Skip hooks temporarily: git commit --no-verify
+
+default_language_version:
+  python: python3.11
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^migrations/
+      - id: end-of-file-fixer
+        exclude: ^migrations/
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags in YAML
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: debug-statements
+      - id: check-docstring-first
+
+  # Ruff - Fast Python linter and formatter (mirrors lint.yml workflow)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      # Linting: ruff check .
+      - id: ruff
+        exclude: ^migrations/
+      # Formatting: ruff format --check .
+      - id: ruff-format
+        exclude: ^migrations/
+
+  # Check for secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(\.secrets\.baseline|uv\.lock)$
+
+  # YAML lint
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-d, relaxed]
+        exclude: ^(migrations/|\.github/dependabot\.yml)
+
+  # Local hooks for project-specific checks (use project's uv environment)
+  - repo: local
+    hooks:
+      # MyPy type checker (mirrors typecheck.yml workflow)
+      # Uses local environment to access all project dependencies
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: [.]
+
+      # Ty type checker (mirrors typecheck.yml workflow)
+      - id: ty-check
+        name: ty type checker
+        entry: uv run ty check . --exclude migrations --exclude demo
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # Bandit security checks
+      - id: bandit
+        name: bandit security check
+        entry: uv run bandit -c pyproject.toml -r src/
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # Run pytest (mirrors test.yml workflow)
+      # Note: This runs on push, not on every file change for speed
+      - id: pytest
+        name: pytest
+        entry: uv run pytest -x -q --tb=short
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]
+
+      # Quick pytest for pre-commit (faster subset)
+      - id: pytest-fast
+        name: pytest (fast)
+        entry: uv run pytest tests/test_app_functions.py tests/test_models.py -x -q --tb=short
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+  autofix_prs: true
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [mypy, ty-check, bandit, pytest, pytest-fast]  # Skip local hooks in CI (they run in workflows)

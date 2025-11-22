@@ -32,6 +32,8 @@ dev = [
     "playwright>=1.40.0",
     "pyyaml>=6.0.0",
     "types-pyyaml>=6.0.0",
+    "pre-commit>=4.0.0",
+    "bandit[toml]>=1.8.0",
 ]
 
 [tool.ruff]
@@ -171,8 +173,7 @@ warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
 # plugins = ["sqlalchemy.ext.mypy.plugin"]
-files = ["src/pybackstock", "tests"]
-exclude = ["migrations/", "demo/", "scripts/"]
+exclude = "(^|/)migrations/|^demo/|^scripts/"
 
 [[tool.mypy.overrides]]
 module = [
@@ -190,5 +191,14 @@ module = [
     "requests",
     "connexion",
     "connexion.*",
+    "yaml",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["demo", "demo.*"]
+ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations", "demo", "scripts"]
+skips = ["B101"]  # Skip assert warnings (used in tests)

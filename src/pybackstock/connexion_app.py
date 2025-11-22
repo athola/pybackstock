@@ -170,7 +170,7 @@ def main() -> None:
     """Run the Connexion application."""
     port = int(os.environ.get("PORT", "5000"))
     # Use uvicorn to serve the ASGI app
-    app.run(host="0.0.0.0", port=port)  # noqa: S104
+    app.run(host="0.0.0.0", port=port)  # noqa: S104  # nosec B104
 
 
 if __name__ == "__main__":
