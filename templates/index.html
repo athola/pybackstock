@@ -339,6 +339,124 @@
           height: 20px;
         }
       }
+
+      /* Info Tooltip Styles */
+      .field-label-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 5px;
+      }
+
+      .field-label-wrapper label {
+        margin-bottom: 0;
+      }
+
+      .info-tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .info-tooltip-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background-color: #6c757d;
+        color: white;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s;
+        line-height: 1;
+      }
+
+      .info-tooltip-icon:hover {
+        background-color: #495057;
+      }
+
+      .info-tooltip-box {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: normal;
+        line-height: 1.4;
+        min-width: 200px;
+        max-width: 280px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1001;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s, visibility 0.2s;
+        text-align: left;
+      }
+
+      .info-tooltip-box::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-bottom-color: #333;
+      }
+
+      .info-tooltip-box.show {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .info-tooltip-box .tooltip-title {
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: #ffc107;
+      }
+
+      .info-tooltip-box .tooltip-example {
+        font-style: italic;
+        color: #adb5bd;
+        margin-top: 6px;
+        font-size: 12px;
+      }
+
+      /* Desktop hover behavior */
+      @media (hover: hover) and (pointer: fine) {
+        .info-tooltip-container:hover .info-tooltip-box {
+          visibility: visible;
+          opacity: 1;
+        }
+      }
+
+      /* Mobile adjustments for tooltips */
+      @media (max-width: 768px) {
+        .info-tooltip-box {
+          min-width: 180px;
+          max-width: 250px;
+          left: 0;
+          transform: translateX(0);
+        }
+
+        .info-tooltip-box::before {
+          left: 9px;
+          transform: translateX(0);
+        }
+
+        .info-tooltip-icon {
+          width: 20px;
+          height: 20px;
+          font-size: 13px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -449,47 +567,157 @@
           <form role="form" name="add-form" method="POST" action="/">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="form-group">
-              <label for="add-id">ID:</label>
+              <div class="field-label-wrapper">
+                <label for="add-id">ID:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about ID">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Item ID</div>
+                    Unique identifier for the product, such as a SKU or barcode number.
+                    <div class="tooltip-example">Example: SKU-12345 or 041234567890</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="id-add" class="form-control" id="add-id" placeholder="Enter ID" autofocus required>
             </div>
             <div class="form-group">
-              <label for="add-description">Description:</label>
+              <div class="field-label-wrapper">
+                <label for="add-description">Description:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Description">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Description</div>
+                    A brief name or description of the product.
+                    <div class="tooltip-example">Example: Organic Whole Milk 1 Gallon</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="description-add" class="form-control" id="add-description" placeholder="Enter description" required>
             </div>
             <div class="form-group">
-              <label for="add-last-sold">Last Sold:</label>
+              <div class="field-label-wrapper">
+                <label for="add-last-sold">Last Sold:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Last Sold">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Last Sold Date</div>
+                    The most recent date this item was sold. Use mm/dd/yyyy format.
+                    <div class="tooltip-example">Example: 01/15/2024</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="last-sold-add" class="form-control" id="add-last-sold" placeholder="Enter last sold date (mm/dd/yyyy)" required>
             </div>
             <div class="form-group">
-              <label for="add-shelf-life">Shelf Life:</label>
+              <div class="field-label-wrapper">
+                <label for="add-shelf-life">Shelf Life:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Shelf Life">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Shelf Life</div>
+                    How long the product remains sellable or usable. Can be in days, weeks, or months.
+                    <div class="tooltip-example">Example: 30 days, 6 months, or 1 year</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="shelf-life-add" class="form-control" id="add-shelf-life" placeholder="Enter shelf life" required>
             </div>
             <div class="form-group">
-              <label for="add-department">Department:</label>
+              <div class="field-label-wrapper">
+                <label for="add-department">Department:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Department">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Department</div>
+                    The store section or category where this item belongs.
+                    <div class="tooltip-example">Example: Dairy, Produce, Bakery, or Frozen</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="department-add" class="form-control" id="add-department" placeholder="Enter department" required>
             </div>
             <div class="form-group">
-              <label for="add-price">Price:</label>
+              <div class="field-label-wrapper">
+                <label for="add-price">Price:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Price">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Retail Price</div>
+                    The selling price of the item. Enter as a number without currency symbol.
+                    <div class="tooltip-example">Example: 3.99 or 12.50</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="price-add" class="form-control" id="add-price" placeholder="Enter price" required>
             </div>
             <div class="form-group">
-              <label for="add-unit">Unit of Measurement:</label>
+              <div class="field-label-wrapper">
+                <label for="add-unit">Unit of Measurement:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Unit of Measurement">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Unit of Measurement</div>
+                    How the item is measured or sold (per piece, weight, volume, etc.).
+                    <div class="tooltip-example">Example: each, lb, oz, gallon, or pack</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="unit-add" class="form-control" id="add-unit" placeholder="Enter unit of measurement" required>
             </div>
             <div class="form-group">
-              <label for="add-xfor">xFor:</label>
+              <div class="field-label-wrapper">
+                <label for="add-xfor">xFor:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about xFor">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Quantity for Price (xFor)</div>
+                    Number of units included in the listed price. Use 1 for single-item pricing, or higher for bundle deals.
+                    <div class="tooltip-example">Example: 1 (regular) or 3 (for "3 for $5")</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="xfor-add" class="form-control" id="add-xfor" placeholder="Enter xFor" required>
             </div>
             <div class="form-group">
-              <label for="add-cost">Cost:</label>
+              <div class="field-label-wrapper">
+                <label for="add-cost">Cost:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Cost">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Wholesale Cost</div>
+                    The purchase cost of the item from the supplier. Enter as a number without currency symbol.
+                    <div class="tooltip-example">Example: 2.50 or 8.00</div>
+                  </div>
+                </div>
+              </div>
               <input type="text" name="cost-add" class="form-control" id="add-cost" placeholder="Enter cost" required>
             </div>
             <div class="form-group">
-              <label for="add-quantity">Quantity in Stock:</label>
+              <div class="field-label-wrapper">
+                <label for="add-quantity">Quantity in Stock:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Quantity in Stock">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Current Stock Level</div>
+                    The number of units currently available in inventory.
+                    <div class="tooltip-example">Example: 25, 100, or 0</div>
+                  </div>
+                </div>
+              </div>
               <input type="number" name="quantity-add" class="form-control" id="add-quantity" placeholder="Enter quantity" value="0" required>
             </div>
             <div class="form-group">
-              <label for="add-reorder-point">Reorder Point:</label>
+              <div class="field-label-wrapper">
+                <label for="add-reorder-point">Reorder Point:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Reorder Point">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Reorder Point</div>
+                    Minimum stock level that triggers a reorder alert. When quantity falls to or below this number, you'll be notified to restock.
+                    <div class="tooltip-example">Example: 10, 5, or 20</div>
+                  </div>
+                </div>
+              </div>
               <input type="number" name="reorder-point-add" class="form-control" id="add-reorder-point" placeholder="Enter reorder point" value="10" required>
             </div>
             <button name="send-add" type="submit" class="btn btn-success">Add</button>
@@ -618,6 +846,74 @@
 
         // Initialize
         updateSelectionText();
+      })();
+
+      // Info tooltip functionality for mobile and desktop
+      (function() {
+        const tooltipIcons = document.querySelectorAll('.info-tooltip-icon');
+        let activeTooltip = null;
+
+        // Check if device has touch support
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        tooltipIcons.forEach(function(icon) {
+          const tooltipBox = icon.nextElementSibling;
+          if (!tooltipBox) return;
+
+          // Click/tap handler for mobile and as alternative for desktop
+          icon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // If this tooltip is already active, close it
+            if (activeTooltip === tooltipBox) {
+              tooltipBox.classList.remove('show');
+              activeTooltip = null;
+              return;
+            }
+
+            // Close any other open tooltip
+            if (activeTooltip) {
+              activeTooltip.classList.remove('show');
+            }
+
+            // Open this tooltip
+            tooltipBox.classList.add('show');
+            activeTooltip = tooltipBox;
+          });
+
+          // Keyboard accessibility - open on Enter or Space
+          icon.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              icon.click();
+            }
+          });
+        });
+
+        // Close tooltip when clicking outside
+        document.addEventListener('click', function(e) {
+          if (activeTooltip && !e.target.closest('.info-tooltip-container')) {
+            activeTooltip.classList.remove('show');
+            activeTooltip = null;
+          }
+        });
+
+        // Close tooltip when touching outside (for mobile)
+        document.addEventListener('touchstart', function(e) {
+          if (activeTooltip && !e.target.closest('.info-tooltip-container')) {
+            activeTooltip.classList.remove('show');
+            activeTooltip = null;
+          }
+        });
+
+        // Close tooltip on Escape key
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && activeTooltip) {
+            activeTooltip.classList.remove('show');
+            activeTooltip = null;
+          }
+        });
       })();
     </script>
   </body>

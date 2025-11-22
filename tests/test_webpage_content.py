@@ -207,3 +207,102 @@ def test_webpage_viewport_meta_tag(client: FlaskClient) -> None:
     data = response.data.decode("utf-8")
     assert 'name="viewport"' in data
     assert "width=device-width" in data
+
+
+@pytest.mark.integration
+def test_add_item_form_has_tooltip_structure(client: FlaskClient) -> None:
+    """Test that the add item form has tooltip HTML structure."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    data = response.data.decode("utf-8")
+    # Check tooltip CSS classes exist
+    assert 'class="info-tooltip-icon"' in data
+    assert 'class="info-tooltip-box"' in data
+    assert 'class="info-tooltip-container"' in data
+    assert 'class="field-label-wrapper"' in data
+
+    # Check tooltip content structure
+    assert 'class="tooltip-title"' in data
+    assert 'class="tooltip-example"' in data
+
+
+@pytest.mark.integration
+def test_add_item_form_has_all_field_tooltips(client: FlaskClient) -> None:
+    """Test that all add item form fields have associated tooltips."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    data = response.data.decode("utf-8")
+
+    # Each field should have a tooltip with title and example
+    expected_tooltips = [
+        ("Item ID", "SKU-12345"),
+        ("Description", "Organic Whole Milk"),
+        ("Last Sold Date", "01/15/2024"),
+        ("Shelf Life", "30 days"),
+        ("Department", "Dairy"),
+        ("Retail Price", "3.99"),
+        ("Unit of Measurement", "each"),
+        ("Quantity for Price (xFor)", "3 for"),
+        ("Wholesale Cost", "2.50"),
+        ("Current Stock Level", "25"),
+        ("Reorder Point", "reorder alert"),
+    ]
+
+    for title, example_fragment in expected_tooltips:
+        assert title in data, f"Missing tooltip title: {title}"
+        assert example_fragment in data, f"Missing example for {title}: {example_fragment}"
+
+
+@pytest.mark.integration
+def test_tooltip_icons_have_accessibility_attributes(client: FlaskClient) -> None:
+    """Test that tooltip icons have proper accessibility attributes."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    data = response.data.decode("utf-8")
+
+    # Check for accessibility attributes on tooltip icons
+    assert 'tabindex="0"' in data  # Keyboard focusable
+    assert 'role="button"' in data  # Semantic role
+    assert 'aria-label="More info' in data  # Screen reader label
+
+
+@pytest.mark.integration
+def test_tooltip_styles_are_included(client: FlaskClient) -> None:
+    """Test that tooltip CSS styles are included in the page."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    data = response.data.decode("utf-8")
+
+    # Check for key tooltip CSS rules
+    assert ".info-tooltip-icon" in data
+    assert ".info-tooltip-box" in data
+    assert ".info-tooltip-box.show" in data
+    assert ".tooltip-title" in data
+    assert ".tooltip-example" in data
+
+    # Check for mobile-responsive styles
+    assert "@media (max-width: 768px)" in data
+    # Check for hover behavior media query
+    assert "@media (hover: hover)" in data
+
+
+@pytest.mark.integration
+def test_tooltip_javascript_is_included(client: FlaskClient) -> None:
+    """Test that tooltip JavaScript functionality is included in the page."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    data = response.data.decode("utf-8")
+
+    # Check for key JavaScript functionality
+    assert "info-tooltip-icon" in data
+    assert "activeTooltip" in data  # State management
+    assert "classList.add('show')" in data or "classList.remove('show')" in data
+    assert "addEventListener('click'" in data  # Click handler
+    assert "addEventListener('keydown'" in data  # Keyboard handler
+    assert "touchstart" in data  # Mobile touch support
+    assert "Escape" in data  # Escape key handler
