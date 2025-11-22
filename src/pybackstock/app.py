@@ -48,6 +48,7 @@ def _normalize_to_date(value: datetime | date | None) -> date | None:
         return value.date()
     return value
 
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query
     from werkzeug.datastructures import FileStorage
