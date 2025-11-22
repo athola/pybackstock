@@ -4,12 +4,15 @@ These tests verify the API handler functions in src/pybackstock/api/handlers.py
 which are called by Connexion when routes are invoked.
 """
 
+import json
+
 import pytest
 from flask import Flask, Response
 
 from src.pybackstock import Grocery, db
 from src.pybackstock.api.handlers import (
     _calculate_visualizations,
+    _make_json_error_response,
     health_check,
     index_get,
     index_post,
@@ -613,3 +616,135 @@ class TestVisualizationCalculationBehavior:
         # At minimum, out of stock item should be flagged
         reorder_descriptions = [item["description"] for item in viz_data["reorder_items"]]
         assert "Out of Stock Dairy" in reorder_descriptions or "Expensive Electronics" in reorder_descriptions
+
+
+class TestMakeJsonErrorResponse:
+    """Tests for _make_json_error_response helper function.
+
+    This helper ensures error responses have explicit Content-Type headers
+    when multiple content types are defined in the OpenAPI spec.
+    """
+
+    def test_creates_response_with_json_content_type(self, app: Flask) -> None:
+        """Test that the helper creates a Response with application/json content type."""
+        with app.app_context():
+            error_dict = {"type": "test_error", "title": "Test Error", "status": 500}
+            response = _make_json_error_response(error_dict, 500)
+
+            assert isinstance(response, Response)
+            assert response.status_code == 500
+            assert response.headers.get("Content-Type") == "application/json"
+
+    def test_serializes_error_dict_to_json(self, app: Flask) -> None:
+        """Test that the error dict is properly serialized to JSON."""
+        with app.app_context():
+            error_dict = {
+                "type": "test_error",
+                "title": "Test Error",
+                "detail": "This is a test error",
+                "status": 400,
+            }
+            response = _make_json_error_response(error_dict, 400)
+
+            response_data = json.loads(response.get_data(as_text=True))
+            assert response_data["type"] == "test_error"
+            assert response_data["title"] == "Test Error"
+            assert response_data["detail"] == "This is a test error"
+            assert response_data["status"] == 400
+
+    def test_supports_different_status_codes(self, app: Flask) -> None:
+        """Test that the helper supports various HTTP status codes."""
+        with app.app_context():
+            for status_code in [400, 401, 403, 404, 500, 502, 503]:
+                error_dict = {"type": "error", "status": status_code}
+                response = _make_json_error_response(error_dict, status_code)
+
+                assert response.status_code == status_code
+
+    def test_handles_nested_error_dict(self, app: Flask) -> None:
+        """Test that the helper handles nested dictionaries in error."""
+        with app.app_context():
+            error_dict = {
+                "type": "validation_error",
+                "title": "Validation Error",
+                "errors": [
+                    {"field": "name", "message": "Required"},
+                    {"field": "email", "message": "Invalid format"},
+                ],
+                "status": 400,
+            }
+            response = _make_json_error_response(error_dict, 400)
+
+            response_data = json.loads(response.get_data(as_text=True))
+            assert len(response_data["errors"]) == 2
+            assert response_data["errors"][0]["field"] == "name"
+
+
+class TestReportGetErrorResponses:
+    """Tests for error response handling in report_get.
+
+    These tests verify that error responses return proper JSON with
+    explicit Content-Type headers, fixing Connexion's multiple content type issue.
+    """
+
+    def test_report_get_success_returns_html_content_type(self, app: Flask) -> None:
+        """Test that successful report_get returns HTML content type."""
+        with app.test_request_context("/report"):
+            result = report_get()
+
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+            content_type = result.headers.get("Content-Type", "")
+            assert "text/html" in content_type
+
+    @pytest.mark.usefixtures("sample_grocery")
+    def test_report_get_success_returns_response_object(self, app: Flask) -> None:
+        """Test that successful report_get returns a Response object, not a tuple."""
+        with app.test_request_context("/report"):
+            result = report_get()
+
+            # Should be a Response object, not a tuple
+            assert isinstance(result, Response)
+            assert not isinstance(result, tuple)
+
+    def test_report_get_empty_db_returns_response_object(self, app: Flask) -> None:
+        """Test that report_get with empty DB still returns a Response object."""
+        with app.test_request_context("/report"):
+            result = report_get()
+
+            # Even with empty DB, should return Response, not tuple
+            assert isinstance(result, Response)
+            assert result.status_code == 200
+
+
+class TestReportErrorResponseContentType:
+    """Tests verifying error responses have correct Content-Type for Connexion.
+
+    The /report endpoint defines multiple content types in OpenAPI spec:
+    - 200: text/html
+    - 500: application/json
+
+    Connexion requires explicit Content-Type headers when multiple types are defined.
+    These tests ensure all response paths return proper Response objects.
+    """
+
+    def test_all_report_get_paths_return_response_objects(self, app: Flask) -> None:
+        """Verify report_get always returns Response objects for type consistency.
+
+        This is crucial for Connexion to know which Content-Type to use.
+        """
+        # Test with empty database (success path)
+        with app.test_request_context("/report"):
+            result = report_get()
+            assert isinstance(result, Response), "report_get should return Response, not tuple"
+
+    @pytest.mark.usefixtures("sample_grocery")
+    def test_report_response_has_explicit_content_type(self, app: Flask) -> None:
+        """Verify that report responses have explicit Content-Type headers."""
+        with app.test_request_context("/report"):
+            result = report_get()
+
+            # Response must have Content-Type header set
+            content_type = result.headers.get("Content-Type")
+            assert content_type is not None, "Response must have Content-Type header"
+            assert "text/html" in content_type or "application/json" in content_type

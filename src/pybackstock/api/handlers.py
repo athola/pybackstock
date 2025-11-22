@@ -249,36 +249,45 @@ def report_get() -> Response:
             all_items = Grocery.query.all()
         except Exception as db_ex:
             logger.exception("Database query failed in report generation")
-            return _make_json_error_response({
-                "type": "database_error",
-                "title": "Database Error",
-                "detail": f"Failed to query inventory database: {db_ex!s}",
-                "status": 500,
-            }, 500)
+            return _make_json_error_response(
+                {
+                    "type": "database_error",
+                    "title": "Database Error",
+                    "detail": f"Failed to query inventory database: {db_ex!s}",
+                    "status": 500,
+                },
+                500,
+            )
 
         # Always calculate summary metrics (shown in summary cards)
         try:
             summary_data = calculate_summary_metrics(all_items)
         except Exception as calc_ex:
             logger.exception("Failed to calculate summary metrics")
-            return _make_json_error_response({
-                "type": "calculation_error",
-                "title": "Calculation Error",
-                "detail": f"Failed to calculate summary metrics: {calc_ex!s}",
-                "status": 500,
-            }, 500)
+            return _make_json_error_response(
+                {
+                    "type": "calculation_error",
+                    "title": "Calculation Error",
+                    "detail": f"Failed to calculate summary metrics: {calc_ex!s}",
+                    "status": 500,
+                },
+                500,
+            )
 
         # Calculate data for selected visualizations
         try:
             viz_data = _calculate_visualizations(selected_viz, all_items)
         except Exception as viz_ex:
             logger.exception("Failed to calculate visualization data")
-            return _make_json_error_response({
-                "type": "visualization_error",
-                "title": "Visualization Error",
-                "detail": f"Failed to calculate visualization data: {viz_ex!s}",
-                "status": 500,
-            }, 500)
+            return _make_json_error_response(
+                {
+                    "type": "visualization_error",
+                    "title": "Visualization Error",
+                    "detail": f"Failed to calculate visualization data: {viz_ex!s}",
+                    "status": 500,
+                },
+                500,
+            )
 
         # Merge summary data and visualization data
         template_data = {**summary_data, **viz_data, "selected_viz": selected_viz}
@@ -299,12 +308,15 @@ def report_get() -> Response:
             html_content = render_template("report.html", **template_data)
         except Exception as template_ex:
             logger.exception("Template rendering failed")
-            return _make_json_error_response({
-                "type": "template_error",
-                "title": "Template Rendering Error",
-                "detail": f"Failed to render report template: {template_ex!s}",
-                "status": 500,
-            }, 500)
+            return _make_json_error_response(
+                {
+                    "type": "template_error",
+                    "title": "Template Rendering Error",
+                    "detail": f"Failed to render report template: {template_ex!s}",
+                    "status": 500,
+                },
+                500,
+            )
 
         response = make_response(html_content, 200)
         response.headers["Content-Type"] = "text/html; charset=utf-8"
@@ -315,13 +327,16 @@ def report_get() -> Response:
         tb_lineno: int | str = exc_tb.tb_lineno if exc_tb is not None else "unknown"
         error_msg = f"Unexpected error in report generation at line {tb_lineno}: {ex!s}"
         logger.exception(error_msg)
-        return _make_json_error_response({
-            "type": "internal_error",
-            "title": "Internal Server Error",
-            "detail": error_msg,
-            "status": 500,
-            "traceback": traceback.format_exc(),
-        }, 500)
+        return _make_json_error_response(
+            {
+                "type": "internal_error",
+                "title": "Internal Server Error",
+                "detail": error_msg,
+                "status": 500,
+                "traceback": traceback.format_exc(),
+            },
+            500,
+        )
 
 
 def report_data_get() -> tuple[dict[str, Any], int]:
