@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -31,6 +31,22 @@ CSV_OLD_FORMAT_COLUMNS = 9
 CSV_QUANTITY_COLUMN = 9
 CSV_REORDER_COLUMN = 10
 CSV_DATE_COLUMN = 11
+
+
+def _normalize_to_date(value: datetime | date | None) -> date | None:
+    """Normalize a datetime or date value to a date object.
+
+    Args:
+        value: A datetime, date, or None value.
+
+    Returns:
+        A date object, or None if input is None.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query
@@ -271,7 +287,9 @@ def calculate_summary_metrics(items: list[Grocery]) -> dict[str, Any]:
 
     # Recent activity - items sold in last 30 days
     recent_threshold = datetime.now(UTC).date() - timedelta(days=30)
-    recent_sales = sum(1 for item in items if item.last_sold and item.last_sold >= recent_threshold)
+    recent_sales = sum(
+        1 for item in items if item.last_sold and _normalize_to_date(item.last_sold) >= recent_threshold
+    )
 
     # Stock level counts
     low_stock_items = [item for item in items if item.quantity <= item.reorder_point]
@@ -342,7 +360,8 @@ def calculate_age_data(items: list[Grocery]) -> dict[str, Any]:
 
     for item in items:
         if item.date_added:
-            age_days = (today - item.date_added).days
+            item_date = _normalize_to_date(item.date_added)
+            age_days = (today - item_date).days
             if age_days <= AGE_RANGE_BOUNDARIES[0]:
                 age_distribution["0-30 days"] += 1
             elif age_days <= AGE_RANGE_BOUNDARIES[1]:
