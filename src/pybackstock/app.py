@@ -10,7 +10,7 @@ import os
 import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -80,7 +80,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Configure app to trust Render.com's proxy headers (X-Forwarded-*)
 # This is required for Flask-Talisman to correctly detect HTTPS behind Render's reverse proxy
-app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+app.wsgi_app = ProxyFix(
     app.wsgi_app,
     x_for=1,  # Trust X-Forwarded-For from 1 proxy
     x_proto=1,  # Trust X-Forwarded-Proto from 1 proxy (critical for HTTPS detection)
@@ -295,19 +295,22 @@ def index() -> str:
             errors, items, random_count = handle_random_action()
             random_added = random_count > 0
 
-    return render_template(
-        "index.html",
-        errors=errors,
-        items=items,
-        column=col,
-        loading_search=load_search,
-        loading_add_item=load_add_item,
-        loading_add_csv=load_add_csv,
-        loading_add_random=load_add_random,
-        item_searched=item_searched,
-        item_added=item_added,
-        random_added=random_added,
-        random_count=random_count,
+    return cast(
+        "str",
+        render_template(
+            "index.html",
+            errors=errors,
+            items=items,
+            column=col,
+            loading_search=load_search,
+            loading_add_item=load_add_item,
+            loading_add_csv=load_add_csv,
+            loading_add_random=load_add_random,
+            item_searched=item_searched,
+            item_added=item_added,
+            random_added=random_added,
+            random_count=random_count,
+        ),
     )
 
 
@@ -609,7 +612,7 @@ def get_matching_items(search_column: str, search_item: str) -> Query[Any] | dic
             "reorder_point": Grocery.reorder_point,
         }
         column = column_map[search_column]
-        return Grocery.query.filter(column == int(search_item))  # type: ignore[no-any-return]
+        return Grocery.query.filter(column == int(search_item))
 
     # Build search term based on input
     if "*" in search_item or "_" in search_item:
@@ -626,7 +629,7 @@ def get_matching_items(search_column: str, search_item: str) -> Query[Any] | dic
     else:
         query = Grocery.query.filter(getattr(Grocery, search_column).ilike(search_term))
 
-    return query.order_by(Grocery.id)  # type: ignore[no-any-return]
+    return query.order_by(Grocery.id)
 
 
 def set_item() -> Grocery:
