@@ -6,9 +6,11 @@ import os
 os.environ["APP_SETTINGS"] = "src.pybackstock.config.TestingConfig"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from datetime import date, timedelta
+from datetime import UTC, datetime
 
 import pytest
+from flask import Flask
+from flask.testing import FlaskClient
 
 from src.pybackstock.grocery_corpus import (
     BAKERY_ITEMS,
@@ -21,6 +23,7 @@ from src.pybackstock.grocery_corpus import (
     PRODUCE_ITEMS,
     GroceryItemTemplate,
 )
+from src.pybackstock.models import Grocery
 from src.pybackstock.random_items import (
     DEFAULT_CONFIG,
     RandomItemConfig,
@@ -137,7 +140,7 @@ class TestRandomGenerators:
     def test_generate_random_last_sold_date_range(self) -> None:
         """Verify last_sold dates are within expected range."""
         config = RandomItemConfig(last_sold_days_back=30, last_sold_null_probability=0)
-        today = date.today()
+        today = datetime.now(UTC).date()
         for _ in range(100):
             last_sold = generate_random_last_sold(config)
             assert last_sold is not None
@@ -173,7 +176,7 @@ class TestRandomGenerators:
     def test_generate_random_date_added_range(self) -> None:
         """Verify date_added is within expected range."""
         config = RandomItemConfig(date_added_days_back=90)
-        today = date.today()
+        today = datetime.now(UTC).date()
         for _ in range(100):
             date_added = generate_random_date_added(config)
             assert date_added <= today
@@ -224,10 +227,8 @@ class TestRandomItemGeneration:
         assert data["shelf_life"] == "99d"
         assert float(data["price"]) == 5.00
 
-    def test_generate_random_item_data_creates_valid_grocery_data(self, app) -> None:
+    def test_generate_random_item_data_creates_valid_grocery_data(self, app: Flask) -> None:
         """Verify generated data can create a valid Grocery instance."""
-        from src.pybackstock.models import Grocery
-
         with app.app_context():
             data = generate_random_item_data(item_id=100)
             item = Grocery(**data)
@@ -248,31 +249,23 @@ class TestRandomItemGeneration:
 
     def test_generate_multiple_random_item_data_unique(self) -> None:
         """Verify items are unique when allow_duplicates=False."""
-        data_list = generate_multiple_random_item_data(
-            starting_id=1, count=50, allow_duplicates=False
-        )
+        data_list = generate_multiple_random_item_data(starting_id=1, count=50, allow_duplicates=False)
         descriptions = [data["description"] for data in data_list]
         assert len(descriptions) == len(set(descriptions))
 
     def test_generate_multiple_random_item_data_allows_duplicates(self) -> None:
         """Verify duplicates are allowed when configured."""
         # Generate more items than in corpus to ensure duplicates
-        data_list = generate_multiple_random_item_data(
-            starting_id=1, count=300, allow_duplicates=True
-        )
+        data_list = generate_multiple_random_item_data(starting_id=1, count=300, allow_duplicates=True)
         assert len(data_list) == 300
 
     def test_generate_multiple_raises_for_too_many_unique(self) -> None:
         """Verify error when requesting too many unique items."""
         with pytest.raises(ValueError, match="Cannot generate"):
-            generate_multiple_random_item_data(
-                starting_id=1, count=1000, allow_duplicates=False
-            )
+            generate_multiple_random_item_data(starting_id=1, count=1000, allow_duplicates=False)
 
-    def test_generate_multiple_creates_valid_groceries(self, app) -> None:
+    def test_generate_multiple_creates_valid_groceries(self, app: Flask) -> None:
         """Verify multiple generated data can create valid Grocery instances."""
-        from src.pybackstock.models import Grocery
-
         with app.app_context():
             data_list = generate_multiple_random_item_data(starting_id=1, count=10)
             items = [Grocery(**data) for data in data_list]
@@ -312,10 +305,8 @@ class TestDepartmentFiltering:
         data = generate_random_item_data_from_department(item_id=1, department="Dairy")
         assert data["department"] == "Dairy"
 
-    def test_generate_random_item_data_from_department_creates_grocery(self, app) -> None:
+    def test_generate_random_item_data_from_department_creates_grocery(self, app: Flask) -> None:
         """Verify department-specific data creates valid Grocery instance."""
-        from src.pybackstock.models import Grocery
-
         with app.app_context():
             data = generate_random_item_data_from_department(item_id=1, department="Dairy")
             item = Grocery(**data)
@@ -359,34 +350,34 @@ class TestRandomItemConfig:
 class TestRandomItemsIntegration:
     """Integration tests for random items with the web app."""
 
-    def test_add_random_items_route(self, client) -> None:
+    def test_add_random_items_route(self, client: FlaskClient) -> None:
         """Test the add random items button shows the form."""
         response = client.post("/", data={"add-random": ""})
         assert response.status_code == 200
         assert b"Generate Random Test Items" in response.data
         assert b"Number of Items" in response.data
 
-    def test_generate_random_items_route(self, client) -> None:
+    def test_generate_random_items_route(self, client: FlaskClient) -> None:
         """Test generating random items via the form."""
         response = client.post("/", data={"send-random": "", "random-count": "3"})
         assert response.status_code == 200
         assert b"Successfully generated 3 random item" in response.data
 
-    def test_generate_random_items_limits_count(self, client) -> None:
+    def test_generate_random_items_limits_count(self, client: FlaskClient) -> None:
         """Test that count is limited to 50."""
         response = client.post("/", data={"send-random": "", "random-count": "100"})
         assert response.status_code == 200
         # Should be limited to 50
         assert b"Successfully generated 50 random item" in response.data
 
-    def test_generate_random_items_minimum_count(self, client) -> None:
+    def test_generate_random_items_minimum_count(self, client: FlaskClient) -> None:
         """Test that count is at least 1."""
         response = client.post("/", data={"send-random": "", "random-count": "0"})
         assert response.status_code == 200
         # Should be at least 1
         assert b"Successfully generated 1 random item" in response.data
 
-    def test_random_items_appear_in_search(self, client) -> None:
+    def test_random_items_appear_in_search(self, client: FlaskClient) -> None:
         """Test that generated items can be searched."""
         # Generate items
         client.post("/", data={"send-random": "", "random-count": "5"})
