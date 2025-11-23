@@ -296,6 +296,7 @@
 
       .count-display {
         min-width: 50px;
+        width: 60px;
         text-align: center;
         font-weight: bold;
         font-size: 18px;
@@ -304,6 +305,39 @@
         padding: 6px 12px;
         border-radius: 4px;
         border: 2px solid #CE2029;
+      }
+
+      .count-input {
+        cursor: text;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .count-input:focus {
+        border-color: #a01a21;
+        box-shadow: 0 0 0 3px rgba(206, 32, 41, 0.2);
+      }
+
+      .count-input.error {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+        animation: shake 0.3s ease-in-out;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+      }
+
+      .count-error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 6px;
+        padding: 4px 8px;
+        background-color: #fff5f5;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
       }
 
       .range-labels {
@@ -624,12 +658,18 @@
                        value="5"
                        aria-label="Number of random items to add (1-50)"
                        aria-describedby="random-count-display">
-                <span id="random-count-display" class="count-display">5</span>
+                <input type="text"
+                       id="random-count-display"
+                       class="count-display count-input"
+                       value="5"
+                       maxlength="2"
+                       aria-label="Enter number of items (1-50)">
               </div>
               <div class="range-labels">
                 <span>1</span>
                 <span>50</span>
               </div>
+              <div id="random-count-error" class="count-error" style="display: none;"></div>
             </div>
             <button name="add-random" id="random" type="submit" class="btn btn-menu">Add Random Items</button>
           </form>
@@ -945,30 +985,119 @@
       // Random item count selector functionality
       (function() {
         const rangeInput = document.getElementById('random-item-count');
-        const countDisplay = document.getElementById('random-count-display');
+        const countInput = document.getElementById('random-count-display');
+        const errorDiv = document.getElementById('random-count-error');
 
-        if (!rangeInput || !countDisplay) return;
+        if (!rangeInput || !countInput) return;
 
-        // Update display and progress bar
-        function updateRangeDisplay() {
-          const value = rangeInput.value;
-          countDisplay.textContent = value;
+        const MIN_VALUE = 1;
+        const MAX_VALUE = 50;
 
-          // Calculate progress percentage for gradient background
+        // Update progress bar gradient
+        function updateProgressBar(value) {
           const min = parseInt(rangeInput.min);
           const max = parseInt(rangeInput.max);
           const progress = ((value - min) / (max - min)) * 100;
           rangeInput.style.setProperty('--range-progress', progress + '%');
         }
 
+        // Show error message
+        function showError(message) {
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+          }
+          countInput.classList.add('error');
+        }
+
+        // Clear error message
+        function clearError() {
+          if (errorDiv) {
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+          }
+          countInput.classList.remove('error');
+        }
+
+        // Validate and parse input value
+        function validateInput(inputValue) {
+          // Check if input is empty
+          if (inputValue.trim() === '') {
+            return { valid: false, error: 'Please enter a number between 1-50' };
+          }
+
+          // Check if input contains only digits
+          if (!/^\d+$/.test(inputValue.trim())) {
+            return { valid: false, error: 'Invalid input. Please enter a number between 1-50' };
+          }
+
+          const numValue = parseInt(inputValue, 10);
+
+          // Check if value is in range
+          if (numValue < MIN_VALUE || numValue > MAX_VALUE) {
+            return { valid: false, error: 'Invalid input. Please enter a number between 1-50' };
+          }
+
+          return { valid: true, value: numValue };
+        }
+
+        // Update input from slider
+        function updateFromSlider() {
+          const value = rangeInput.value;
+          countInput.value = value;
+          updateProgressBar(value);
+          clearError();
+        }
+
+        // Update slider from input
+        function updateFromInput() {
+          const result = validateInput(countInput.value);
+
+          if (result.valid) {
+            rangeInput.value = result.value;
+            updateProgressBar(result.value);
+            clearError();
+          } else {
+            showError(result.error);
+          }
+        }
+
         // Initialize display
-        updateRangeDisplay();
+        updateFromSlider();
 
-        // Update on input (real-time as slider moves)
-        rangeInput.addEventListener('input', updateRangeDisplay);
+        // Update on slider input (real-time as slider moves)
+        rangeInput.addEventListener('input', updateFromSlider);
 
-        // Also update on change for compatibility
-        rangeInput.addEventListener('change', updateRangeDisplay);
+        // Also update on slider change for compatibility
+        rangeInput.addEventListener('change', updateFromSlider);
+
+        // Update on count input change
+        countInput.addEventListener('input', function() {
+          // Allow typing, validate on blur or enter
+          clearError();
+        });
+
+        countInput.addEventListener('blur', updateFromInput);
+
+        countInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            updateFromInput();
+            countInput.blur();
+          }
+        });
+
+        // Prevent non-numeric input (allow backspace, delete, arrows, tab)
+        countInput.addEventListener('keypress', function(e) {
+          const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+          if (allowedKeys.includes(e.key)) return;
+
+          // Only allow digits
+          if (!/^\d$/.test(e.key)) {
+            e.preventDefault();
+            showError('Invalid input. Please enter a number between 1-50');
+          }
+        });
       })();
 
       // Visualization selector functionality

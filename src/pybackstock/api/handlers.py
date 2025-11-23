@@ -26,6 +26,7 @@ from src.pybackstock.app import (
     calculate_top_value_data,
     handle_add_action,
     handle_csv_action,
+    handle_random_action,
     handle_search_action,
 )
 
@@ -157,26 +158,38 @@ def index_post() -> str:
     load_search = False
     load_add_item = True
     load_add_csv = False
+    load_add_random = False
     item_searched = False
     item_added = False
+    random_added = False
+    random_count = 0
 
     # Handle form view switching
     if FormAction.SEARCH_ITEM in request.form:
-        load_search, load_add_item, load_add_csv = True, False, False
+        load_search, load_add_item, load_add_csv, load_add_random = True, False, False, False
     elif FormAction.ADD_ITEM in request.form:
-        load_search, load_add_item, load_add_csv = False, True, False
+        load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
     elif FormAction.ADD_CSV in request.form:
-        load_search, load_add_item, load_add_csv = False, False, True
+        load_search, load_add_item, load_add_csv, load_add_random = False, False, True, False
+    elif FormAction.ADD_RANDOM in request.form:
+        # Directly add random items when button is clicked
+        load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
+        errors, items, random_count = handle_random_action()
+        random_added = random_count > 0
     # Handle form submissions
     elif FormAction.SEND_SEARCH in request.form:
-        load_search, load_add_item, load_add_csv = True, False, False
+        load_search, load_add_item, load_add_csv, load_add_random = True, False, False, False
         errors, items, item_searched, item_added = handle_search_action()
     elif FormAction.SEND_ADD in request.form:
-        load_search, load_add_item, load_add_csv = False, True, False
+        load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
         errors, items, item_searched, item_added = handle_add_action()
     elif FormAction.CSV_SUBMIT in request.form:
-        load_search, load_add_item, load_add_csv = False, False, True
+        load_search, load_add_item, load_add_csv, load_add_random = False, False, True, False
         errors, items = handle_csv_action()
+    elif FormAction.SEND_RANDOM in request.form:
+        load_search, load_add_item, load_add_csv, load_add_random = False, False, False, True
+        errors, items, random_count = handle_random_action()
+        random_added = random_count > 0
 
     return render_template(
         "index.html",
@@ -186,8 +199,11 @@ def index_post() -> str:
         loading_search=load_search,
         loading_add_item=load_add_item,
         loading_add_csv=load_add_csv,
+        loading_add_random=load_add_random,
         item_searched=item_searched,
         item_added=item_added,
+        random_added=random_added,
+        random_count=random_count,
     )
 
 

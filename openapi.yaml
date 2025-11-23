@@ -97,12 +97,20 @@ paths:
                   type: string
                 add-csv:
                   type: string
+                add-random:
+                  type: string
                 send-search:
                   type: string
                 send-add:
                   type: string
+                send-random:
+                  type: string
                 csv-submit:
                   type: string
+                random-item-count:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
           multipart/form-data:
             schema:
               type: object
