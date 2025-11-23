@@ -23,6 +23,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import shared database instance
 from src.pybackstock.database import db
+from src.pybackstock.random_items import generate_random_item_data
 
 # Constants for analytics calculations
 PRICE_RANGE_BOUNDARIES = (5, 10, 20, 50)
@@ -119,8 +120,10 @@ class FormAction:
     SEARCH_ITEM = "search-item"
     ADD_ITEM = "add-item"
     ADD_CSV = "add-csv"
+    ADD_RANDOM = "add-random"
     SEND_SEARCH = "send-search"
     SEND_ADD = "send-add"
+    SEND_RANDOM = "send-random"
     CSV_SUBMIT = "csv-submit"
 
 
@@ -193,6 +196,47 @@ def handle_csv_action() -> tuple[list[str], list[Any]]:
     return errors, items
 
 
+def handle_random_action() -> tuple[list[str], list[Any], int]:
+    """Handle random item generation form submission.
+
+    Returns:
+        Tuple of (errors, items, count_added).
+    """
+    errors: list[str] = []
+    items: list[Any] = []
+    count_added = 0
+
+    try:
+        count = int(request.form.get("random-count", 5))
+        # Limit to reasonable range
+        count = max(1, min(count, 50))
+
+        # Get the next available ID
+        max_id_result = db.session.query(func.max(Grocery.id)).scalar()
+        next_id = (max_id_result or 0) + 1
+
+        for i in range(count):
+            item_data = generate_random_item_data(next_id + i)
+            item = Grocery(**item_data)
+            # Check if ID already exists (shouldn't happen but be safe)
+            item_exists = db.session.query(Grocery).filter(Grocery.id == item.id).first() is not None
+            if not item_exists:
+                db.session.add(item)
+                db.session.commit()
+                json_obj = json.dumps(dict(item))
+                items.append(json_obj)
+                count_added += 1
+            else:
+                errors.append(f"Item with ID {item.id} already exists, skipping.")
+
+    except (KeyError, ValueError, TypeError) as ex:
+        error_type = "Unable to generate random items. "
+        errors = report_exception(ex, error_type, errors)
+        db.session.rollback()
+
+    return errors, items, count_added
+
+
 # Route handlers have been moved to src.pybackstock.api.handlers
 # The routes are now managed by Connexion via openapi.yaml
 
@@ -220,27 +264,36 @@ def index() -> str:
     load_search = False
     load_add_item = True
     load_add_csv = False
+    load_add_random = False
     item_searched = False
     item_added = False
+    random_added = False
+    random_count = 0
 
     if request.method == "POST":
         # Handle form view switching
         if FormAction.SEARCH_ITEM in request.form:
-            load_search, load_add_item, load_add_csv = True, False, False
+            load_search, load_add_item, load_add_csv, load_add_random = True, False, False, False
         elif FormAction.ADD_ITEM in request.form:
-            load_search, load_add_item, load_add_csv = False, True, False
+            load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
         elif FormAction.ADD_CSV in request.form:
-            load_search, load_add_item, load_add_csv = False, False, True
+            load_search, load_add_item, load_add_csv, load_add_random = False, False, True, False
+        elif FormAction.ADD_RANDOM in request.form:
+            load_search, load_add_item, load_add_csv, load_add_random = False, False, False, True
         # Handle form submissions
         elif FormAction.SEND_SEARCH in request.form:
-            load_search, load_add_item, load_add_csv = True, False, False
+            load_search, load_add_item, load_add_csv, load_add_random = True, False, False, False
             errors, items, item_searched, item_added = handle_search_action()
         elif FormAction.SEND_ADD in request.form:
-            load_search, load_add_item, load_add_csv = False, True, False
+            load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
             errors, items, item_searched, item_added = handle_add_action()
         elif FormAction.CSV_SUBMIT in request.form:
-            load_search, load_add_item, load_add_csv = False, False, True
+            load_search, load_add_item, load_add_csv, load_add_random = False, False, True, False
             errors, items = handle_csv_action()
+        elif FormAction.SEND_RANDOM in request.form:
+            load_search, load_add_item, load_add_csv, load_add_random = False, False, False, True
+            errors, items, random_count = handle_random_action()
+            random_added = random_count > 0
 
     return render_template(
         "index.html",
@@ -250,8 +303,11 @@ def index() -> str:
         loading_search=load_search,
         loading_add_item=load_add_item,
         loading_add_csv=load_add_csv,
+        loading_add_random=load_add_random,
         item_searched=item_searched,
         item_added=item_added,
+        random_added=random_added,
+        random_count=random_count,
     )
 
 

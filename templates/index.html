@@ -486,6 +486,10 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button name="search-item" id="search" type="submit" class="btn btn-menu">Search Item</button>
           </form>
+          <form role="form" name="add-random-form" method="POST" action="/">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button name="add-random" id="random" type="submit" class="btn btn-menu">Add Random Items</button>
+          </form>
           <form role="form" name="generate-report-form" method="GET" action="/report" id="report-form">
             <!-- Visualization Selection Dropdown -->
             <div class="viz-selector-container">
@@ -720,6 +724,27 @@
             </div>
             <button name="send-add" type="submit" class="btn btn-success">Add</button>
           </form>
+        {% elif loading_add_random %}
+          <form role="form" name="random-form" method="POST" action="/">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <h4>Generate Random Test Items</h4>
+            <p style="color: #666; margin-bottom: 15px;">Add randomized grocery items from a curated corpus of common products with realistic pricing.</p>
+            <div class="form-group">
+              <div class="field-label-wrapper">
+                <label for="random-count">Number of Items:</label>
+                <div class="info-tooltip-container">
+                  <span class="info-tooltip-icon" tabindex="0" role="button" aria-label="More info about Number of Items">i</span>
+                  <div class="info-tooltip-box">
+                    <div class="tooltip-title">Random Items Count</div>
+                    How many random grocery items to generate. Each item will have a unique ID and randomized but realistic values.
+                    <div class="tooltip-example">Range: 1-50 items</div>
+                  </div>
+                </div>
+              </div>
+              <input type="number" name="random-count" class="form-control" id="random-count" placeholder="Enter number of items" value="5" min="1" max="50" required>
+            </div>
+            <button name="send-random" type="submit" class="btn btn-success">Generate Items</button>
+          </form>
         {% endif %}
       </div>
       <!-- Error Messages -->
@@ -733,7 +758,9 @@
 
       <!-- Results Section -->
       <div class="results-section">
-        {% if item_added %}
+        {% if random_added %}
+          <div class="success-message">Successfully generated {{ random_count }} random item(s)!</div>
+        {% elif item_added %}
           {% for item in items %}
             <div class="success-message">Item with ID: {{ item.id }} successfully added!</div>
           {% endfor %}

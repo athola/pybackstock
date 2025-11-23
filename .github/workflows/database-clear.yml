@@ -1,0 +1,186 @@
+name: Clear Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "CLEAR DATABASE" to confirm you want to delete all inventory items'
+        required: true
+        type: string
+      create_backup:
+        description: 'Create a backup before clearing?'
+        required: true
+        type: boolean
+        default: true
+      reason:
+        description: 'Reason for clearing the database'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Validate Confirmation
+    runs-on: ubuntu-latest
+    outputs:
+      confirmed: ${{ steps.check.outputs.confirmed }}
+
+    steps:
+      - name: Check confirmation
+        id: check
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" == "CLEAR DATABASE" ]; then
+            echo "confirmed=true" >> $GITHUB_OUTPUT
+            echo "Confirmation validated"
+          else
+            echo "confirmed=false" >> $GITHUB_OUTPUT
+            echo "::error::Invalid confirmation. You must type 'CLEAR DATABASE' exactly."
+            exit 1
+          fi
+
+  backup:
+    name: Create Safety Backup
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.confirmed == 'true' && github.event.inputs.create_backup == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create pre-clear backup
+        env:
+          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::RENDER_DATABASE_URL secret is not configured"
+            exit 1
+          fi
+
+          mkdir -p backups
+          BACKUP_FILE="backups/pre-clear-backup-$(date '+%Y%m%d-%H%M%S').sql.gz"
+
+          echo "Creating backup before database clear..."
+          pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
+
+          echo "Backup created: $BACKUP_FILE"
+          echo "Size: $(du -h "$BACKUP_FILE" | cut -f1)"
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-clear-backup-${{ github.run_number }}
+          path: backups/*.sql.gz
+          retention-days: 7
+
+  clear:
+    name: Clear Inventory Data
+    runs-on: ubuntu-latest
+    needs: [validate, backup]
+    if: |
+      always() &&
+      needs.validate.outputs.confirmed == 'true' &&
+      (needs.backup.result == 'success' || github.event.inputs.create_backup == 'false')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Clear database
+        env:
+          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::RENDER_DATABASE_URL secret is not configured"
+            exit 1
+          fi
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "CLEARING DATABASE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Time: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+
+          # Get count before clearing
+          BEFORE_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM grocery_items;" 2>/dev/null | tr -d ' ' || echo "0")
+          echo "Items before clear: $BEFORE_COUNT"
+
+          # Clear the grocery_items table (TRUNCATE is faster and resets sequences)
+          psql "$DATABASE_URL" -c "TRUNCATE TABLE grocery_items RESTART IDENTITY CASCADE;"
+
+          # Verify the clear
+          AFTER_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM grocery_items;" 2>/dev/null | tr -d ' ' || echo "0")
+          echo "Items after clear: $AFTER_COUNT"
+
+          if [ "$AFTER_COUNT" == "0" ]; then
+            echo ""
+            echo "Database cleared successfully"
+          else
+            echo "::error::Database clear may have failed. Items remaining: $AFTER_COUNT"
+            exit 1
+          fi
+
+      - name: Log clear operation
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "OPERATION COMPLETE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "The database has been cleared."
+          echo ""
+          echo "To restore from backup:"
+          echo "  1. Download the pre-clear backup artifact (available for 7 days)"
+          echo "  2. Run: gunzip -c <backup_file> | psql \$DATABASE_URL"
+          echo ""
+          echo "To add test data:"
+          echo "  1. Visit the application"
+          echo "  2. Click 'Add Random Items'"
+          echo "  3. Generate items from the curated grocery corpus"
+
+  notify:
+    name: Clear Status Notification
+    runs-on: ubuntu-latest
+    needs: [validate, backup, clear]
+    if: always()
+
+    steps:
+      - name: Report status
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "DATABASE CLEAR WORKFLOW SUMMARY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Validation: ${{ needs.validate.result }}"
+          echo "Backup: ${{ needs.backup.result || 'skipped' }}"
+          echo "Clear: ${{ needs.clear.result }}"
+          echo ""
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo ""
+
+          if [ "${{ needs.clear.result }}" == "success" ]; then
+            echo "The database has been successfully cleared."
+            echo "You can now add fresh test data using the 'Add Random Items' feature."
+          elif [ "${{ needs.validate.result }}" == "failure" ]; then
+            echo "Operation cancelled: confirmation was not valid."
+          else
+            echo "::warning::Database clear operation did not complete successfully."
+          fi
