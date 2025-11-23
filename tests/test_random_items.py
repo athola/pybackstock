@@ -351,11 +351,11 @@ class TestRandomItemsIntegration:
     """Integration tests for random items with the web app."""
 
     def test_add_random_items_route(self, client: FlaskClient) -> None:
-        """Test the add random items button shows the form."""
-        response = client.post("/", data={"add-random": ""})
+        """Test the add random items button directly adds items."""
+        response = client.post("/", data={"add-random": "", "random-item-count": "5"})
         assert response.status_code == 200
-        assert b"Generate Random Test Items" in response.data
-        assert b"Number of Items" in response.data
+        # Button now directly adds items instead of showing a form
+        assert b"Successfully generated 5 random item" in response.data
 
     def test_generate_random_items_route(self, client: FlaskClient) -> None:
         """Test generating random items via the form."""

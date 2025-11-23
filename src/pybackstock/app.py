@@ -207,7 +207,8 @@ def handle_random_action() -> tuple[list[str], list[Any], int]:
     count_added = 0
 
     try:
-        count = int(request.form.get("random-count", 5))
+        # Support both old and new field names for backwards compatibility
+        count = int(request.form.get("random-item-count", request.form.get("random-count", 5)))
         # Limit to reasonable range
         count = max(1, min(count, 50))
 
@@ -279,7 +280,10 @@ def index() -> str:
         elif FormAction.ADD_CSV in request.form:
             load_search, load_add_item, load_add_csv, load_add_random = False, False, True, False
         elif FormAction.ADD_RANDOM in request.form:
-            load_search, load_add_item, load_add_csv, load_add_random = False, False, False, True
+            # Directly add random items when button is clicked
+            load_search, load_add_item, load_add_csv, load_add_random = False, True, False, False
+            errors, items, random_count = handle_random_action()
+            random_added = random_count > 0
         # Handle form submissions
         elif FormAction.SEND_SEARCH in request.form:
             load_search, load_add_item, load_add_csv, load_add_random = True, False, False, False

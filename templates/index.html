@@ -224,6 +224,129 @@
         }
       }
 
+      /* Random Item Count Selector Styles */
+      .random-count-selector {
+        margin-bottom: 10px;
+        width: 100%;
+      }
+
+      .random-count-selector label {
+        font-weight: bold;
+        margin-bottom: 8px;
+        display: block;
+        font-size: 14px;
+      }
+
+      .range-selector-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .range-selector {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 8px;
+        background: linear-gradient(to right, #CE2029 0%, #CE2029 var(--range-progress, 10%), #dee2e6 var(--range-progress, 10%), #dee2e6 100%);
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .range-selector::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: #CE2029;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .range-selector::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .range-selector::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: #CE2029;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .range-selector::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .range-selector:focus {
+        outline: 2px solid #CE2029;
+        outline-offset: 4px;
+      }
+
+      .count-display {
+        min-width: 50px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 18px;
+        color: #CE2029;
+        background: #f8f9fa;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 2px solid #CE2029;
+      }
+
+      .range-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+        padding: 0 2px;
+      }
+
+      /* Mobile adjustments for range selector */
+      @media (max-width: 768px) {
+        .range-selector-wrapper {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .range-selector {
+          width: 100%;
+          height: 12px;
+        }
+
+        .range-selector::-webkit-slider-thumb {
+          width: 32px;
+          height: 32px;
+        }
+
+        .range-selector::-moz-range-thumb {
+          width: 32px;
+          height: 32px;
+        }
+
+        .count-display {
+          font-size: 20px;
+          padding: 8px 16px;
+        }
+
+        .random-count-selector label {
+          font-size: 16px;
+        }
+      }
+
       /* Visualization Selector Styles */
       .viz-selector-container {
         margin-bottom: 10px;
@@ -488,6 +611,26 @@
           </form>
           <form role="form" name="add-random-form" method="POST" action="/">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <!-- Random Item Count Selector -->
+            <div class="random-count-selector">
+              <label for="random-item-count">Items:</label>
+              <div class="range-selector-wrapper">
+                <input type="range"
+                       name="random-item-count"
+                       id="random-item-count"
+                       class="range-selector"
+                       min="1"
+                       max="50"
+                       value="5"
+                       aria-label="Number of random items to add (1-50)"
+                       aria-describedby="random-count-display">
+                <span id="random-count-display" class="count-display">5</span>
+              </div>
+              <div class="range-labels">
+                <span>1</span>
+                <span>50</span>
+              </div>
+            </div>
             <button name="add-random" id="random" type="submit" class="btn btn-menu">Add Random Items</button>
           </form>
           <form role="form" name="generate-report-form" method="GET" action="/report" id="report-form">
@@ -799,6 +942,35 @@
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
     <script>
+      // Random item count selector functionality
+      (function() {
+        const rangeInput = document.getElementById('random-item-count');
+        const countDisplay = document.getElementById('random-count-display');
+
+        if (!rangeInput || !countDisplay) return;
+
+        // Update display and progress bar
+        function updateRangeDisplay() {
+          const value = rangeInput.value;
+          countDisplay.textContent = value;
+
+          // Calculate progress percentage for gradient background
+          const min = parseInt(rangeInput.min);
+          const max = parseInt(rangeInput.max);
+          const progress = ((value - min) / (max - min)) * 100;
+          rangeInput.style.setProperty('--range-progress', progress + '%');
+        }
+
+        // Initialize display
+        updateRangeDisplay();
+
+        // Update on input (real-time as slider moves)
+        rangeInput.addEventListener('input', updateRangeDisplay);
+
+        // Also update on change for compatibility
+        rangeInput.addEventListener('change', updateRangeDisplay);
+      })();
+
       // Visualization selector functionality
       (function() {
         const dropdownToggle = document.getElementById('viz-dropdown-toggle');
